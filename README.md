@@ -1,2 +1,3 @@
-# Lunar_Sleep_Schedule
-Lunar Sleep Schedule
+# Lunar Sleep Schedule
+
+Designed for lunar sleep schedule NASA HUNCH project
