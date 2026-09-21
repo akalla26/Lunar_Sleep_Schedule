@@ -1,9 +1,9 @@
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from PySide6.QtWidgets import QApplication, QLabel
 
 fileData = ""
-currdatetime = datetime.now(datetime.utcoffset(None))
+currdatetime = datetime.now(timezone.utc)
 second = currdatetime.second
 minute = currdatetime.minute
 hour = currdatetime.hour
