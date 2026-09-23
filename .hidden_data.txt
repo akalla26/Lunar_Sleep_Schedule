@@ -1,4 +1,5 @@
-Sleep Score: 30
+Starting Date: 23/9/2026
+Fatigue Score: 30
 Recommended Sleep Time: 22:30
 Recommended Wake Time: 06:30
 Sleep duration in mins: 480
