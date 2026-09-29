@@ -5,7 +5,7 @@ import sys
 from datetime import datetime, timezone, timedelta
 from PySide6.QtWidgets import QApplication, QLabel
 from datetime import datetime, UTC
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel
+from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QApplication, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit
 from PySide6.QtCore import Qt
 import ctypes
 
@@ -15,12 +15,6 @@ fileData = ""
 
 # Stores the data for the current time
 currDateTime = 0
-second = 0
-minute = 0
-hour = 0
-day = 0
-month = 0
-year = 0
 
 # Stores the basic data for the user
 # These values are placeholders, their proper values are derived from the save file
@@ -52,24 +46,120 @@ canEat = False
 canHaveCaffiene = False
 canHaveLight = False
 
+# Sometime in the future, there will be an actual interface where the user gets to upload data and see proper visualizations
+# For now, all inputs and other stuff of the like will be handled via text based prompting
+
+# Prompts user to input a command
+textInput = ""
+def Command():
+
+    print("Enter one of the following commands")
+    print("Recommendations (recommend)")
+    print("Enter Sleep Log (log)")
+    print("Stats (stats)")
+    print("Kill program (kill)")
+    textInput = input("> ")
+
+    if textInput.lower() == "recommend":
+        Recommendations()
+
+    elif textInput.lower() == "log":
+        Log_Sleep()
+
+    elif textInput.lower() == "stats":
+        Stats()
+
+    elif textInput.lower() == "kill":
+        Kill()
+
+    else:
+        print("Invalid command")
+
+# Enters a sleep log
+def Log_Sleep():
+    
+    fileData = open(filePath, "r")
+    line = fileData.readline()
+    index = 0
+
+    lastSleptTime = ""
+
+    # Sets the time last slept
+    while line:
+
+        if index == 6:
+            
+            newLine = line.split(": ")
+            newLine = newLine[1]
+            newLine = newLine.split(" ")
+            timeLine = newLine[0].split(":")
+            dateLine = newLine[1].split("/")
+            
+            hr = int(timeLine[0])
+            mins = int(timeLine[1])
+            sec = int(timeLine[2])
+
+            day = int(dateLine[0])
+            month = int(dateLine[1])
+            yr = int(dateLine[2])
+
+            lastSleptTime = datetime(yr, month, day, hr, mins, sec)
+            print(lastSleptTime)
+                
+        line = fileData.readline()
+        index += 1
+
+    fileData.close()
+
+    timeSlept = input("Enter when you slept using the 24 hour clock time\n> ")
+
+    try:
+        pass 
+
+    except:
+        pass
+
+    dateSlept = input("Enter the day this occured in D/M/Y format\n> ")
+
+# Prints out recommendations
+def Recommendations():
+
+    Update_Time()
+
+# Shows stats
+def Stats():
+    
+    Update_Time()
+    Remove_Protection()
+
+    fileData = open(filePath, "r")
+    line = fileData.readline()
+
+    index = 0
+
+    # Reads data and initializes it
+    while line:
+
+        print(line, end="")
+        line = fileData.readline()
+        index += 1
+
+    fileData.close()
+    Add_Protection()
+
+    Remove_Protection()    
+
+# Closes program
+def Kill():
+
+    sys.exit()
+
 # Updates the current time
 def Update_Time():
 
     global currDateTime
-    global second
-    global minute
-    global hour
-    global day
-    global month
-    global year
 
     currDateTime = datetime.now(UTC)
-    second = currDateTime.second
-    minute = currDateTime.minute
-    hour = currDateTime.hour
-    day = currDateTime.day
-    month = currDateTime.month
-    year = currDateTime.year
 
 # Removes protections, allows the overwriting of data
 # Protection should be removed first, then readded
@@ -85,20 +175,17 @@ def Add_Protection():
     FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
 
+# Set up
 Update_Time()
 Remove_Protection()
 
 # Attempts to open the file
 # If it exists, it closes it, if it doesn't it sets it up again before closing it
-###### CREATES A NEW FILE REGARDLESS FOR NOW #######
 try:
-    #fileData = open(filePath, "r")  ##### UNCOMMENT WHEN FINISHED!!!!
-    fileData = open(filePath, "w") ## REMOVE WHEN DONE
-    fileData.write("Starting Date: " + str(day) + "/" + str(month) + "/" + str(year) + "\nFatigue Score: 30\nRecommended Sleep Time: 22:30\nRecommended Wake Time: 06:30\nSleep duration in mins: 480\nTime slept: 0\nLast slept: " + str(hour) + ":" + str(minute) + ":" + str(second) + " " + str(day) + "/" + str(month) + "/" + str(year)) ## REMOVE WHEN DONE
-
+    fileData = open(filePath, "r")  
 except:
     fileData = open(filePath, "w")
-    fileData.write("Starting Date: " + str(day) + "/" + str(month) + "/" + str(year) + "\nFatigue Score: 30\nRecommended Sleep Time: 22:30\nRecommended Wake Time: 06:30\nSleep duration in mins: 480\nTime slept: 0\nLast slept: " + str(hour) + ":" + str(minute) + ":" + str(second) + " " + str(day) + "/" + str(month) + "/" + str(year))
+    fileData.write("Starting Date: " + str(currDateTime.day) + "/" + str(currDateTime.month) + "/" + str(currDateTime.year) + "\nFatigue Score: 30\nRecommended Sleep Time: 22:30\nRecommended Wake Time: 06:30\nSleep duration in mins: 480\nTime slept: 0\nLast slept: " + str(currDateTime.hour) + ":" + str(currDateTime.minute) + ":" + str(currDateTime.second) + " " + str(currDateTime.day) + "/" + str(currDateTime.month) + "/" + str(currDateTime.year))
 
 fileData.close()
 Add_Protection()
@@ -164,12 +251,8 @@ fileData.close()
 
 Add_Protection()
 
-app = QApplication(sys.argv)
-label = QLabel("Hello, World!")
-label.show()
-app.exec()
-
 while True:
 
     sleep(0.5)
     Update_Time()
+    Command()
