@@ -3,7 +3,7 @@ from time import sleep
 from os import read
 import sys
 from datetime import datetime, timezone, timedelta
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from datetime import datetime, UTC
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QApplication, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit
 from PySide6.QtCore import Qt
@@ -55,14 +55,14 @@ class MainWindow(QMainWindow):
     def __init__(self):
         
         super(MainWindow, self).__init__()
-        self.setWindowTitle("Lunar Sleep Schedule")
+        self.setWindowTitle("Universal Sleep Tracker")
         self.setGeometry(100, 100, 800, 600)
         self.setup_ui()
         self.showFullScreen()
 
     def setup_ui(self):
         
-        self.label = QLabel("Lunar Sleep Schedule", self)
+        self.label = QLabel("Universal Sleep Tracker", self)
         self.label.setGeometry(50, 50, 300, 30)
         
         self.logButton = QPushButton("Enter Sleep Log", self)
@@ -76,10 +76,10 @@ class MainWindow(QMainWindow):
         self.statsButton = QPushButton("Show Stats", self)
         self.statsButton.setGeometry(50, 180, 150, 30)
         self.statsButton.clicked.connect(self.show_stats)
-        
+        """
         self.placeHolderButton = QPushButton("Text Prompt Placeholder", self)
         self.placeHolderButton.setGeometry(50, 220, 150, 30)
-        self.placeHolderButton.clicked.connect(self.start_program)
+        self.placeHolderButton.clicked.connect(self.start_program)"""
 
     def enter_sleep_log(self):
         pass # Placeholder for the function that will handle entering sleep logs
@@ -92,7 +92,17 @@ class MainWindow(QMainWindow):
 
     def start_program(self):
         Command()
+
+class StatPopUp(QWidget):
+   
+    def __init__(self):
         
+        super(MainWindow, self).__init__()
+
+    def PopUp(self):
+
+        return self
+
 # Actually runs the program, this is where the main window is created and shown
 def window():
     
@@ -179,7 +189,7 @@ def Recommendations():
 
     Update_Time()
 
-# Shows stats
+# Shows stats OLD
 def Stats():
     
     Update_Time()

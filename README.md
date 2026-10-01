@@ -1,3 +1,5 @@
-# Lunar Sleep Schedule
+# Universal Sleep Tracker 
+### (Formerly Lunar Sleep Schedule)
 
-Designed for lunar sleep schedule NASA HUNCH project
+An open source designed for lunar sleep schedule NASA HUNCH project
+Intended to help astronauts keep track of their sleep on long missions
