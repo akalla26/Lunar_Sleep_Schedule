@@ -49,8 +49,61 @@ canHaveLight = False
 # Sometime in the future, there will be an actual interface where the user gets to upload data and see proper visualizations
 # For now, all inputs and other stuff of the like will be handled via text based prompting
 
-# Prompts user to input a command
+# Main window class, this is where the user will be able to interact with the program
+class MainWindow(QMainWindow):
+    
+    def __init__(self):
+        
+        super(MainWindow, self).__init__()
+        self.setWindowTitle("Lunar Sleep Schedule")
+        self.setGeometry(100, 100, 800, 600)
+        self.setup_ui()
+        self.showFullScreen()
+
+    def setup_ui(self):
+        
+        self.label = QLabel("Lunar Sleep Schedule", self)
+        self.label.setGeometry(50, 50, 300, 30)
+        
+        self.logButton = QPushButton("Enter Sleep Log", self)
+        self.logButton.setGeometry(50, 100, 150, 30)
+        self.logButton.clicked.connect(self.enter_sleep_log)
+        
+        self.recButton = QPushButton("Show Recommendations", self)
+        self.recButton.setGeometry(50, 140, 150, 30)
+        self.recButton.clicked.connect(self.show_recommendations)
+        
+        self.statsButton = QPushButton("Show Stats", self)
+        self.statsButton.setGeometry(50, 180, 150, 30)
+        self.statsButton.clicked.connect(self.show_stats)
+        
+        self.placeHolderButton = QPushButton("Text Prompt Placeholder", self)
+        self.placeHolderButton.setGeometry(50, 220, 150, 30)
+        self.placeHolderButton.clicked.connect(self.start_program)
+
+    def enter_sleep_log(self):
+        pass # Placeholder for the function that will handle entering sleep logs
+    
+    def show_recommendations(self):
+        pass # Placeholder for the function that will show recommendations based on the user's sleep data
+    
+    def show_stats(self):
+        pass # Placeholder for the function that will show stats based on the user's sleep data
+
+    def start_program(self):
+        Command()
+        
+# Actually runs the program, this is where the main window is created and shown
+def window():
+    
+    app = QApplication(sys.argv)
+    win = MainWindow()
+    win.show()
+    sys.exit(app.exec())
+
+# Prompts user to input a command, placeholder to be scrapped
 textInput = ""
+
 def Command():
 
     print("Enter one of the following commands")
@@ -251,8 +304,11 @@ fileData.close()
 
 Add_Protection()
 
+window()
+
+'''
 while True:
 
     sleep(0.5)
     Update_Time()
-    Command()
+    Command()'''
