@@ -1,7 +1,7 @@
 Starting Date: 3/10/2026
 Fatigue Score: 30
 Recommended Sleep Time: 22:30
-Recommended Wake Time: 06:30
+Recommended Wake Time: 6:30
 Sleep duration in mins: 480
-Time slept: 0
-Last slept: 23:51:28 3/10/2026
+Time slept: 480
+Last slept: 8:00:00 4/10/2026

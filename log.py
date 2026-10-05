@@ -68,6 +68,9 @@ class Ui_MainWindow(object):
         self.sleepEndTitle.setObjectName(u"sleepEndTitle")
         self.sleepEndTitle.setGeometry(QRect(50, 300, 300, 30))
         self.sleepEndTitle.setFont(font1)
+        self.notif = QLabel(self.centralwidget)
+        self.notif.setObjectName(u"notif")
+        self.notif.setGeometry(QRect(500, 200, 200, 100))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -89,5 +92,6 @@ class Ui_MainWindow(object):
         self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))
         self.sleepStartTitle.setText(QCoreApplication.translate("MainWindow", u"Enter start time of sleep", None))
         self.sleepEndTitle.setText(QCoreApplication.translate("MainWindow", u"Enter end time of sleep", None))
+        self.notif.setText("")
     # retranslateUi
 

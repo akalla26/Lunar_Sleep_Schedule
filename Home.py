@@ -8,8 +8,8 @@ from unittest import loader
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from datetime import datetime, UTC
-from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QApplication, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit, QDateTimeEdit
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QMainWindow, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit, QDateTimeEdit
+from PySide6.QtCore import Qt, QDateTime, QDate, QTime, QTimeZone, QByteArray
 import ctypes
 
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
@@ -41,16 +41,10 @@ hrToWake = 0
 minToWake = 0
 hrTarget = 0
 minTarget = 0
-hrLastSlept = 0
-minLastSlept = 0
-dayLastSlept = 0
-monthLastSlept = 0
-yearLastSlept = 0
+lastSleptTime = 0
 hrSlept = 0
 minSlept = 0
-firstDay = 0
-firstMonth = 0
-firstYear = 0
+firstDate = 0
 
 # Slightly more complex but still basic data
 # This is not stored within the file, it is determined based on existing data
@@ -59,6 +53,7 @@ canEat = False
 canHaveCaffiene = False
 canHaveLight = False
 
+# Sets up some stuff
 app = QApplication(sys.argv)
 widget = QtWidgets.QStackedWidget()
 main_window = ""
@@ -126,6 +121,9 @@ class UI_MainWindow(QMainWindow):
         global widget
         
         widget.setCurrentIndex(2)  # Switch to the log window
+        
+        if type(log_window) is QLabel:
+            log_window.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
     
     def show_recommendations(self):
         pass # Placeholder for the function that will show recommendations based on the user's sleep data
@@ -184,7 +182,7 @@ class Stats_Window(QMainWindow):
             
             if index == 6:
                                 
-                self.lastSlept.setText(f"Last Slept: {hrLastSlept}:{minLastSlept:02d} {dayLastSlept}/{monthLastSlept}/{yearLastSlept}")
+                self.lastSlept.setText(f"Last Slept: {lastSleptTime.hour}:{lastSleptTime.minute:02d} {lastSleptTime.day}/{lastSleptTime.month}/{lastSleptTime.year}")
             
             line = fileData.readline()
             index += 1
@@ -313,6 +311,10 @@ class Log_Window(QMainWindow):
         self.sleepEndTitle.setObjectName(u"sleepEndTitle")
         self.sleepEndTitle.setGeometry(QRect(50, 300, 300, 30))
         self.sleepEndTitle.setFont(font1)
+        self.notif = QLabel(self.centralwidget)
+        self.notif.setObjectName(u"notif")
+        self.notif.setGeometry(QRect(500, 200, 200, 100))
+        self.notif.setWordWrap(True)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -334,30 +336,191 @@ class Log_Window(QMainWindow):
     
     def log_sleep(self):
         
-        Remove_Protection()
-    
-        fileData = open(filePath, "r")
-        line = fileData.readline()
-
-        index = 0
-
-        # Reads data and initializes it
-        while line:
-                        
-            line = fileData.readline()
-            index += 1
-
-        fileData.close()
-        Add_Protection()
+        global lastSleptTime, hrSlept, minSlept, fatigueScore
         
-        sleep_start = self.sleepStartLog.dateTime().toPython()
-        sleep_end = self.sleepEndLog.dateTime().toPython()
+        # Create a timezone using an IANA text ID
+        tz_id = QByteArray(b"Europe/Paris")
+        time_zone = QTimeZone(tz_id)
 
-        # Here you would add the logic to log the sleep data, e.g., write to a file or update the database
+        # Construct the aware datetime
+        aware_datetime = QDateTime(QDate(2026, 10, 4), QTime(16, 30, 0), time_zone)
+        
+        sleep_start = self.sleepStartLog.dateTime().toPython().replace(tzinfo=timezone.utc)
+        sleep_end = self.sleepEndLog.dateTime().toPython().replace(tzinfo=timezone.utc)
+        
+        sleep_start_adjusted = QDateTime(sleep_start).toTimeZone(time_zone)
+        sleep_end_adjusted = QDateTime(sleep_end).toTimeZone(time_zone)               
+                
         print(f"Sleep Start: {sleep_start}, Sleep End: {sleep_end}")
+        print(f"Sleep Start: {sleep_start_adjusted}, Sleep End: {sleep_end_adjusted}")
+        
+        Update_Time()  # Update the current time to ensure we have the latest time for validation
+        
+        if (sleep_start >= sleep_end):
+            self.notif.setText("Error: Sleep start time must be before sleep end time.")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        elif sleep_start_adjusted.secsTo(sleep_end_adjusted) > 24 * 3600:
+            self.notif.setText("Error: Sleep duration cannot exceed 24 hours.")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        elif (sleep_start_adjusted > currDateTime) or (sleep_end_adjusted > currDateTime):
+            self.notif.setText("Error: Sleep times cannot be in the future.")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        elif (sleep_start_adjusted < lastSleptTime) or (sleep_end_adjusted < lastSleptTime):
+            self.notif.setText("Error: Sleep times cannot be before the last slept time. (Last slept: " + str(lastSleptTime.hour) + ":" + str(lastSleptTime.minute) + " " + str(lastSleptTime.day) + "/" + str(lastSleptTime.month) + "/" + str(lastSleptTime.year) + ")")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        elif (sleep_start == sleep_end):
+            self.notif.setText("Error: Sleep start and end times cannot be the same.")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        elif (sleep_start.date() == sleep_end.date()) and (sleep_start.time() > sleep_end.time()):
+            self.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
+            self.notif.setStyleSheet("color: red;")
+            return
+        
+        else:
+            
+            def Reset_Data():
+                
+                global firstDate, fatigueScore, hrToSleep, minToSleep, hrToWake, minToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime
+                
+                Remove_Protection()
+                
+                fileData = open(filePath, "w")
 
-        # After logging, you might want to go back to the main window
-        self.back_to_main()    
+                fileData.write(f"Starting Date: {firstDate.day}/{firstDate.month}/{firstDate.year}\n")
+                fileData.write(f"Fatigue Score: {fatigueScore}\n")
+                fileData.write(f"Recommended Sleep Time: {hrToSleep}:{minToSleep:02d}\n")
+                fileData.write(f"Recommended Wake Time: {hrToWake}:{minToWake:02d}\n")
+                fileData.write(f"Sleep duration in mins: {hrTarget * 60 + minTarget}\n")                    
+                fileData.write(f"Time slept: {hrSlept * 60 + minSlept}\n")               
+                fileData.write(f"Last slept: {lastSleptTime.hour}:{lastSleptTime.minute:02d}:{lastSleptTime.second:02d} {lastSleptTime.day}/{lastSleptTime.month}/{lastSleptTime.year}\n")
+                        
+                fileData.close()
+                fileData = open(filePath, "r")
+                line = fileData.readline()
+                index = 0
+
+                # Reads data and initializes it
+                while line:
+
+                    # Gets the starting date
+                    if index == 0:
+
+                        newLine = line.split(" ")
+                        splitLine = newLine[-1].split("/")
+                        firstDate = datetime(int(splitLine[2]), int(splitLine[1]), int(splitLine[0]))
+
+                    # Gets the fatigue score
+                    elif index == 1:
+
+                        newLine = line.split(" ")
+                        fatigueScore = int(newLine[2])        
+
+                    # Gets the sleep start time
+                    elif index == 2:
+
+                        newLine = line.split(" ")
+                        splitLine = newLine[-1].split(":")
+                        hrToSleep = int(splitLine[0])
+                        minToSleep = int(splitLine[1])
+
+                    # Gets the sleep end time
+                    elif index == 3:
+
+                        newLine = line.split(" ")
+                        splitLine = newLine[-1].split(":")
+                        hrToWake = int(splitLine[0])
+                        minToWake = int(splitLine[1])
+
+                    # Gets the target sleep time
+                    elif index == 4:
+
+                        newLine = line.split(" ")
+                        minTarget = int(newLine[-1]) % 60
+                        hrTarget = int(newLine[-1]) // 60
+
+                    # Gets the time slept
+                    elif index == 5:
+
+                        newLine = line.split(" ")
+                        minSlept = int(newLine[-1]) % 60
+                        hrSlept = int(newLine[-1]) // 60
+                        
+                    # Gets the time slept
+                    elif index == 6:
+                                
+                        newLine = line.split(": ")
+                        newLine = newLine[1]
+                        newLine = newLine.split(" ")
+                        timeLine = newLine[0].split(":")
+                        dateLine = newLine[1].split("/")
+
+                        lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
+
+                    print(line)
+                    line = fileData.readline()
+                    index += 1
+
+                fileData.close()
+
+                Add_Protection()      
+            
+            if (sleep_start.date() == sleep_end.date()):                
+                
+                lastSleptTime = sleep_end
+                hrSlept += (sleep_end - sleep_start).seconds // 3600
+                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
+                
+                Reset_Data()
+                
+            else:
+                                
+                lastSleptTime = sleep_end
+                hrSlept += (sleep_end - sleep_start).seconds // 3600
+                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
+                
+                hrDiff = hrSlept - hrTarget
+                minDiff = minSlept - minTarget
+                
+                # Limits on fatigue score, it cannot go below 0 or above 100
+                # The fatigue score is calculated based on the difference between the actual sleep duration and the target sleep duration
+                
+                if (hrDiff < 0):
+                    hrDiff = -hrDiff
+                    
+                if (minDiff < 0):
+                    minDiff = -minDiff
+                    
+                if (hrDiff == 0):
+                    if (minDiff == 0):
+                        fatigueScore -= 0  # No change in fatigue score if the sleep duration matches the target duration
+                    else:
+                        fatigueScore -= minDiff // 15  # Each 15 minutes of difference changes the fatigue score by 1 point
+                    
+                fatigueScore -= (hrDiff * 60 + minDiff) // 15  # Each 15 minutes of difference changes the fatigue score by 1 point
+                
+                if (fatigueScore < 0):
+                    fatigueScore = 0
+                    
+                elif (fatigueScore > 100):
+                    fatigueScore = 100
+                
+                hrSlept = 0
+                minSlept = 0          
+                    
+                Reset_Data()
+
+            # After logging, you might want to go back to the main window
+            self.back_to_main()    
         
     def back_to_main(self):
         global widget
@@ -370,124 +533,8 @@ class Log_Window(QMainWindow):
         self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))
         self.sleepStartTitle.setText(QCoreApplication.translate("MainWindow", u"Enter start time of sleep", None))
         self.sleepEndTitle.setText(QCoreApplication.translate("MainWindow", u"Enter end time of sleep", None))
+        self.notif.setText("")
     # retranslateUi
- 
-"""   
-class Stats_Window(QMainWindow):
-    
-    def __init__(self):
-        
-        super(Stats_Window, self).__init__()
-        self.setWindowTitle("Stats")
-        self.setGeometry(200, 200, 800, 600)
-        self.setupUi(self)
-        
-    def update_stats(self):
-        
-        Update_Time()
-        Remove_Protection()
-
-        fileData = open(filePath, "r")
-        line = fileData.readline()
-
-        index = 0
-
-        # Reads data and initializes it
-        while line:
-
-            if index == 1:
-                
-                self.fatigue.setText(f"Fatigue Score: {fatigueScore}")
-            
-            if index == 2:
-                
-                self.recSleep.setText(f"Recommended Sleep Time: {hrToSleep}:{minToSleep:02d}")
-            
-            if index == 3:
-                
-                self.recWake.setText(f"Recommended Wake Time: {hrToWake}:{minToWake:02d}")
-            
-            if index == 4:
-                
-                self.targetSleep.setText(f"Sleep target: {hrTarget}:{minTarget:02d}")
-            
-            if index == 5:
-                
-                self.sleepDuration.setText(f"Time slept: {hrSlept}:{minSlept:02d}")
-            
-            if index == 6:
-                                
-                self.lastSlept.setText(f"Last Slept: {hrLastSlept}:{minLastSlept:02d} {dayLastSlept}/{monthLastSlept}/{yearLastSlept}")
-            
-            line = fileData.readline()
-            index += 1
-
-        fileData.close()
-        Add_Protection()
-        
-    def setupUi(self, MainWindow):
-        if not MainWindow.objectName():
-            MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(800, 600)
-        self.centralwidget = QWidget(MainWindow)
-        self.centralwidget.setObjectName(u"centralwidget")
-        self.title = QLabel(self.centralwidget)
-        self.title.setObjectName(u"title")
-        self.title.setGeometry(QRect(50, 50, 200, 30))
-        font = QFont()
-        font.setPointSize(15)
-        self.title.setFont(font)
-        self.fatigue = QLabel(self.centralwidget)
-        self.fatigue.setObjectName(u"fatigue")
-        self.fatigue.setGeometry(QRect(50, 115, 200, 30))
-        self.recSleep = QLabel(self.centralwidget)
-        self.recSleep.setObjectName(u"recSleep")
-        self.recSleep.setGeometry(QRect(50, 175, 200, 30))
-        self.recWake = QLabel(self.centralwidget)
-        self.recWake.setObjectName(u"recWake")
-        self.recWake.setGeometry(QRect(50, 235, 200, 30))
-        self.targetSleep = QLabel(self.centralwidget)
-        self.targetSleep.setObjectName(u"targetSleep")
-        self.targetSleep.setGeometry(QRect(50, 295, 200, 30))
-        self.sleepDuration = QLabel(self.centralwidget)
-        self.sleepDuration.setObjectName(u"sleepDuration")
-        self.sleepDuration.setGeometry(QRect(50, 355, 200, 30))
-        self.exit = QPushButton(self.centralwidget)
-        self.exit.setObjectName(u"exit")
-        self.exit.setGeometry(QRect(50, 500, 150, 30))
-        self.lastSlept = QLabel(self.centralwidget)
-        self.lastSlept.setObjectName(u"lastSlept")
-        self.lastSlept.setGeometry(QRect(50, 415, 200, 30))
-        MainWindow.setCentralWidget(self.centralwidget)
-        self.menubar = QMenuBar(MainWindow)
-        self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 33))
-        MainWindow.setMenuBar(self.menubar)
-        self.statusbar = QStatusBar(MainWindow)
-        self.statusbar.setObjectName(u"statusbar")
-        MainWindow.setStatusBar(self.statusbar)
-
-        self.retranslateUi(MainWindow)
-
-        QMetaObject.connectSlotsByName(MainWindow)
-        self.update_stats()
-        self.exit.clicked.connect(self.back_to_main)
-        
-    def back_to_main(self):
-        global widget
-        widget.setCurrentIndex(0)  # Switch back to the main window
-
-    def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
-        self.title.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.fatigue.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.recSleep.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.recWake.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.sleepDuration.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.lastSlept.setText(QCoreApplication.translate("MainWindow", u"Stats", None))
-        self.exit.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
-    # retranslateUi
-"""
 
 # Actually runs the program, this is where the main window is created and shown
 def window():
@@ -503,57 +550,6 @@ def window():
     widget.addWidget(log_window)
     widget.show()
     sys.exit(app.exec())
-
-# Enters a sleep log
-def Log_Sleep():
-    
-    fileData = open(filePath, "r")
-    line = fileData.readline()
-    index = 0
-
-    lastSleptTime = ""
-
-    # Sets the time last slept
-    while line:
-
-        if index == 6:
-            
-            newLine = line.split(": ")
-            newLine = newLine[1]
-            newLine = newLine.split(" ")
-            timeLine = newLine[0].split(":")
-            dateLine = newLine[1].split("/")
-            
-            hr = int(timeLine[0])
-            mins = int(timeLine[1])
-            sec = int(timeLine[2])
-
-            day = int(dateLine[0])
-            month = int(dateLine[1])
-            yr = int(dateLine[2])
-
-            lastSleptTime = datetime(yr, month, day, hr, mins, sec)
-            print(lastSleptTime)
-                
-        line = fileData.readline()
-        index += 1
-
-    fileData.close()
-
-    timeSlept = input("Enter when you slept using the 24 hour clock time\n> ")
-
-    try:
-        pass 
-
-    except:
-        pass
-
-    dateSlept = input("Enter the day this occured in D/M/Y format\n> ")
-
-# Prints out recommendations
-def Recommendations():
-
-    Update_Time()
 
 # Updates the current time
 def Update_Time():
@@ -605,9 +601,7 @@ while line:
 
         newLine = line.split(" ")
         splitLine = newLine[-1].split("/")
-        firstDay = int(splitLine[0])
-        firstMonth = int(splitLine[1])
-        firstYear = int(splitLine[2])
+        firstDate = datetime(int(splitLine[2]), int(splitLine[1]), int(splitLine[0]))
 
     # Gets the fatigue score
     elif index == 1:
@@ -644,7 +638,18 @@ while line:
         newLine = line.split(" ")
         minSlept = int(newLine[-1]) % 60
         hrSlept = int(newLine[-1]) // 60
-            
+        
+    # Gets the time slept
+    elif index == 6:
+                
+        newLine = line.split(": ")
+        newLine = newLine[1]
+        newLine = newLine.split(" ")
+        timeLine = newLine[0].split(":")
+        dateLine = newLine[1].split("/")
+
+        lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
+
     line = fileData.readline()
     index += 1
 
