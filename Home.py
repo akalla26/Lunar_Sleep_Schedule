@@ -484,8 +484,6 @@ class Log_Window(QMainWindow):
             else:
                                 
                 lastSleptTime = sleep_end
-                hrSlept += (sleep_end - sleep_start).seconds // 3600
-                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
                 
                 hrDiff = hrSlept - hrTarget
                 minDiff = minSlept - minTarget
@@ -517,6 +515,9 @@ class Log_Window(QMainWindow):
                 minSlept = 0          
                     
                 Reset_Data()
+                
+                hrSlept += (sleep_end - sleep_start).seconds // 3600
+                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
         
     def back_to_main(self):
         global widget
