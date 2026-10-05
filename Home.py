@@ -349,10 +349,7 @@ class Log_Window(QMainWindow):
         sleep_end = self.sleepEndLog.dateTime().toPython().replace(tzinfo=timezone.utc)
         
         sleep_start_adjusted = QDateTime(sleep_start).toTimeZone(time_zone)
-        sleep_end_adjusted = QDateTime(sleep_end).toTimeZone(time_zone)               
-                
-        print(f"Sleep Start: {sleep_start}, Sleep End: {sleep_end}")
-        print(f"Sleep Start: {sleep_start_adjusted}, Sleep End: {sleep_end_adjusted}")
+        sleep_end_adjusted = QDateTime(sleep_end).toTimeZone(time_zone)
         
         Update_Time()  # Update the current time to ensure we have the latest time for validation
         
@@ -387,6 +384,9 @@ class Log_Window(QMainWindow):
             return
         
         else:
+            
+            self.notif.setText("Successfully logged!")
+            self.notif.setStyleSheet("color: green;")
             
             def Reset_Data():
                 
@@ -466,7 +466,6 @@ class Log_Window(QMainWindow):
 
                         lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
 
-                    print(line)
                     line = fileData.readline()
                     index += 1
 
@@ -518,9 +517,6 @@ class Log_Window(QMainWindow):
                 minSlept = 0          
                     
                 Reset_Data()
-
-            # After logging, you might want to go back to the main window
-            self.back_to_main()    
         
     def back_to_main(self):
         global widget
@@ -530,7 +526,7 @@ class Log_Window(QMainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Enter Sleep Log", None))
         self.logSleep.setText(QCoreApplication.translate("MainWindow", u"Log Sleep", None))
-        self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))
+        self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
         self.sleepStartTitle.setText(QCoreApplication.translate("MainWindow", u"Enter start time of sleep", None))
         self.sleepEndTitle.setText(QCoreApplication.translate("MainWindow", u"Enter end time of sleep", None))
         self.notif.setText("")
