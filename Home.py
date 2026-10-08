@@ -124,6 +124,7 @@ class UI_MainWindow(QMainWindow):
         
         if type(log_window) is QLabel:
             log_window.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
+            
     
     def show_recommendations(self):
         pass # Placeholder for the function that will show recommendations based on the user's sleep data
@@ -133,6 +134,9 @@ class UI_MainWindow(QMainWindow):
         global widget
         
         widget.setCurrentIndex(1)  # Switch to the stats window
+        
+        if type(stats_window) is QLabel:
+            stats_window.update_stats()
     
     def closeEvent(self, event):
         pass # Possibly does something when the window is closed, like saving data or cleaning up resources
