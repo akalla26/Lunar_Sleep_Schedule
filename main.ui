@@ -81,7 +81,7 @@
      <string>Show Stats</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="exitButton">
+   <widget class="QPushButton" name="overrideButton">
     <property name="geometry">
      <rect>
       <x>50</x>
@@ -91,7 +91,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Close</string>
+     <string>Override</string>
     </property>
    </widget>
   </widget>

@@ -40,9 +40,9 @@ class Ui_MainWindow(object):
         self.statsButton = QPushButton(self.centralwidget)
         self.statsButton.setObjectName(u"statsButton")
         self.statsButton.setGeometry(QRect(50, 200, 150, 30))
-        self.exitButton = QPushButton(self.centralwidget)
-        self.exitButton.setObjectName(u"exitButton")
-        self.exitButton.setGeometry(QRect(50, 250, 150, 30))
+        self.overrideButton = QPushButton(self.centralwidget)
+        self.overrideButton.setObjectName(u"overrideButton")
+        self.overrideButton.setGeometry(QRect(50, 250, 150, 30))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
@@ -63,6 +63,6 @@ class Ui_MainWindow(object):
         self.logButton.setText(QCoreApplication.translate("MainWindow", u"Log Sleep", None))
         self.recButton.setText(QCoreApplication.translate("MainWindow", u"Show Recommendations", None))
         self.statsButton.setText(QCoreApplication.translate("MainWindow", u"Show Stats", None))
-        self.exitButton.setText(QCoreApplication.translate("MainWindow", u"Close", None))
+        self.overrideButton.setText(QCoreApplication.translate("MainWindow", u"Override", None))
     # retranslateUi
 
