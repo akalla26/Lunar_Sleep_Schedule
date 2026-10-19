@@ -39,30 +39,33 @@ timeToSleep = time(0,0,0)
 timeToWake = time(0,0,0)
 hrTarget = 0
 minTarget = 0
-lastSleptTime = 0
+lastSleptTime = datetime(1, 1, 1)
 hrSlept = 0
 minSlept = 0
 firstDate = 0
 
-# Slightly more complex but still basic data
-# This is not stored within the file, it is determined based on existing data
-shouldExercise = False
-canEat = False
-canHaveCaffiene = False
-canHaveLight = False
-
 # Related to override information
+# These are also saved in the save file
 overrideStartDate = ""
 overrideEndDate = ""
 overrideOffsets = [0, 0]
 
-# Sets up some stuff
+# These values are not associated with sleep timings, rather they are centered around recommendations
+# Because recommendations are time sensitive and don't need to be saved between sessions, they aren't saved to a file
+shouldExercise = False
+shouldTakeSleepMeds = False
+canEat = False
+canHaveCaffiene = False
+canHaveLight = False
+
+# Sets up the ui
 app = QApplication(sys.argv)
 widget = QtWidgets.QStackedWidget()
 main_window = ""
 stats_window = ""
 log_window = ""
 override_window = ""
+recommendation_window = ""
 
 # Writes the data into the file
 def Write_Data():
@@ -114,7 +117,7 @@ def Load_Data():
 
     # Reads data and initializes it
     while line:
-
+        
         # Gets the starting date
         if index == 0:
 
@@ -132,7 +135,7 @@ def Load_Data():
         elif index == 2:
 
             newLine = line.split(" ")
-            splitLine = newLine[-1].split(":")
+            splitLine = newLine[-1].split(":")        
             timeToSleep = time(int(splitLine[0]), int(splitLine[1]), 0)
 
         # Gets the sleep end time
@@ -148,8 +151,21 @@ def Load_Data():
             newLine = line.split(" ")
             minTarget = int(newLine[-1]) % 60
             hrTarget = int(newLine[-1]) // 60
-
-
+            
+            if (timeToSleep > timeToWake):
+                timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day + 1, timeToWake.hour, timeToWake.minute)
+                timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
+                diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
+                minTarget = diff.minute
+                hrTarget = diff.hour            
+            
+            else:
+                timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToWake.hour, timeToWake.minute)
+                timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
+                diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
+                minTarget = diff.minute
+                hrTarget = diff.hour
+                
         # Gets the time slept
         elif index == 5:
 
@@ -166,7 +182,7 @@ def Load_Data():
             timeLine = newLine[0].split(":")
             dateLine = newLine[1].split("/")
 
-            lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
+            lastSleptTime = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
 
         # Gets override
         elif index == 7:
@@ -195,8 +211,16 @@ def Load_Data():
 
             newLine = line.split(": ")
             newLine = newLine[1].split(",")
-            overrideOffsets[0] = int(newLine[0])
-            overrideOffsets[1] = int(newLine[1])
+            
+            if currDateTime.date() >= overrideStartDate.date() and currDateTime.date() <= overrideEndDate.date():
+            
+                overrideOffsets[0] = int(newLine[0])
+                overrideOffsets[1] = int(newLine[1])
+                
+            else:
+                
+                overrideOffsets[0] = 0
+                overrideOffsets[1] = 0
 
         line = fileData.readline()
         index += 1
@@ -260,7 +284,7 @@ class UI_MainWindow(QMainWindow):
     
         self.logButton.clicked.connect(self.enter_sleep_log)
             
-        self.recButton.clicked.connect(self.show_recommendations)
+        self.recButton.clicked.connect(self.recommend)
         
         self.statsButton.clicked.connect(self.show_stats)
         
@@ -287,11 +311,10 @@ class UI_MainWindow(QMainWindow):
         
         widget.setCurrentIndex(3)
 
-    def manual_override(self):
-        pass # Manually overrides sleep schedule
-    
-    def show_recommendations(self):
-        pass # Placeholder for the function that will show recommendations based on the user's sleep data
+    def recommend(self):
+        global widget
+
+        widget.setCurrentIndex(4)
     
     def show_stats(self):
         
@@ -737,8 +760,6 @@ class Override_Window(QMainWindow):
             try:
                 intStartInput = int(startInput)
                 intEndInput = int(endInput)
-                print(abs(intStartInput))
-                print(abs(intEndInput))
                 
                 if abs(intStartInput) > 300 or abs(intEndInput) > 300:
                     self.info.setText("Your sleep schedule cannot shift by more than 5 hours")
@@ -786,6 +807,52 @@ class Override_Window(QMainWindow):
         self.info.setText(QCoreApplication.translate("MainWindow", u"When offsetting, negative numbers indicate earlier sleep and positive numbers indicate later sleep", None))
     # retranslateUi
 
+# Recommendation window
+class Recommendation_Window(QMainWindow):
+    
+    def __init__(self):
+        
+        super(Recommendation_Window, self).__init__()
+        self.setWindowTitle("Recommendations")
+        self.setGeometry(200, 200, 800, 600)
+        self.setupUi(self)
+
+    def setupUi(self, MainWindow):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"Dialog")
+        MainWindow.resize(800, 600)
+        self.title = QLabel(MainWindow)
+        self.title.setObjectName(u"title")
+        self.title.setGeometry(QRect(50, 50, 300, 30))
+        font = QFont()
+        font.setPointSize(15)
+        self.title.setFont(font)
+        self.returnHome = QPushButton(MainWindow)
+        self.returnHome.setObjectName(u"returnHome")
+        self.returnHome.setGeometry(QRect(50, 520, 150, 30))
+        self.recommendationLabel = QLabel(MainWindow)
+        self.recommendationLabel.setObjectName(u"recommendationLabel")
+        self.recommendationLabel.setGeometry(QRect(50, 100, 700, 400))
+
+        self.retranslateUi(MainWindow)
+
+        QMetaObject.connectSlotsByName(MainWindow)
+
+        self.returnHome.clicked.connect(self.back_to_main)
+
+    # setupUi
+
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.title.setText(QCoreApplication.translate("MainWindow", u"Recommendations", None))
+        self.returnHome.setText(QCoreApplication.translate("MainWindow", u"Return", None))
+        self.recommendationLabel.setText("")
+    # retranslateUi
+        
+    def back_to_main(self):
+        global widget
+        widget.setCurrentIndex(0)  # Switch back to the main window
+
 # Actually runs the program, this is where the main window is created and shown
 def window():
     
@@ -800,6 +867,8 @@ def window():
     widget.addWidget(log_window)
     override_window = Override_Window()
     widget.addWidget(override_window)
+    recommendation_window = Recommendation_Window()
+    widget.addWidget(recommendation_window)
     widget.show()
     sys.exit(app.exec())
 
@@ -844,128 +913,13 @@ except:
     fileData.write("Override start: 1/1/1 \n")
     fileData.write("Override end: 1/1/1 \n")
     fileData.write("Override offset: " + str(overrideOffsets[0]) + "," + str(overrideOffsets[1]))
-                
 
 fileData.close()
 Add_Protection()
 Remove_Protection()
 
-fileData = open(filePath, "r")
-line = fileData.readline()
-index = 0
-
 # Reads data and initializes it
-while line:
+Load_Data()
 
-    # Gets the starting date
-    if index == 0:
-
-        newLine = line.split(" ")
-        splitLine = newLine[-1].split("/")
-        firstDate = datetime(int(splitLine[2]), int(splitLine[1]), int(splitLine[0]))
-
-    # Gets the fatigue score
-    elif index == 1:
-
-        newLine = line.split(" ")
-        fatigueScore = int(newLine[2])        
-
-    # Gets the sleep start time
-    elif index == 2:
-
-        newLine = line.split(" ")
-        splitLine = newLine[-1].split(":")        
-        timeToSleep = time(int(splitLine[0]), int(splitLine[1]), 0)
-
-    # Gets the sleep end time
-    elif index == 3:
-
-        newLine = line.split(" ")
-        splitLine = newLine[-1].split(":")
-        timeToWake = time(int(splitLine[0]), int(splitLine[1]), 0)
-
-    # Gets the target sleep time
-    elif index == 4:
-
-        newLine = line.split(" ")
-        minTarget = int(newLine[-1]) % 60
-        hrTarget = int(newLine[-1]) // 60
-        
-        if (timeToSleep > timeToWake):
-            timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day + 1, timeToWake.hour, timeToWake.minute)
-            timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
-            diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
-            minTarget = diff.minute
-            hrTarget = diff.hour            
-        
-        else:
-            timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToWake.hour, timeToWake.minute)
-            timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
-            diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
-            minTarget = diff.minute
-            hrTarget = diff.hour
-            
-    # Gets the time slept
-    elif index == 5:
-
-        newLine = line.split(" ")
-        minSlept = int(newLine[-1]) % 60
-        hrSlept = int(newLine[-1]) // 60
-        
-    # Gets the time slept
-    elif index == 6:
-                
-        newLine = line.split(": ")
-        newLine = newLine[1]
-        newLine = newLine.split(" ")
-        timeLine = newLine[0].split(":")
-        dateLine = newLine[1].split("/")
-
-        lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
-
-    # Gets override
-    elif index == 7:
-
-        newLine = line.split(": ")
-        dateLine = newLine[1].split("/")
-        dateLine[2] = dateLine[2].split("\n")
-        dateLine[0] = int(dateLine[0])
-        dateLine[1] = int(dateLine[1])
-        dateLine[2] = int(dateLine[2][0])
-        overrideStartDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
-
-    # Gets override
-    elif index == 8:
-
-        newLine = line.split(": ")
-        dateLine = newLine[1].split("/")
-        dateLine[2] = dateLine[2].split("\n")
-        dateLine[0] = int(dateLine[0])
-        dateLine[1] = int(dateLine[1])
-        dateLine[2] = int(dateLine[2][0])
-        overrideEndDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
-
-    # Gets override
-    elif index == 9:
-
-        newLine = line.split(": ")
-        newLine = newLine[1].split(",")
-        
-        if currDateTime.date() >= overrideStartDate.date() and currDateTime.date() <= overrideEndDate.date():
-        
-            overrideOffsets[0] = int(newLine[0])
-            overrideOffsets[1] = int(newLine[1])
-            
-        else:
-            
-            overrideOffsets[0] = 0
-            overrideOffsets[1] = 0
-
-    line = fileData.readline()
-    index += 1
-
-fileData.close()
-
-Add_Protection()
-
+# Start of program
 window()
