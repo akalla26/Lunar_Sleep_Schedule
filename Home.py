@@ -3,12 +3,12 @@ import gc
 from time import sleep
 from os import read
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date, time
 from unittest import loader
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from datetime import datetime, UTC
-from PySide6.QtWidgets import QMainWindow, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit, QDateTimeEdit
+from PySide6.QtWidgets import QMainWindow, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit, QDateTimeEdit, QCalendarWidget, QTextEdit
 from PySide6.QtCore import Qt, QDateTime, QDate, QTime, QTimeZone, QByteArray
 import ctypes
 
@@ -35,10 +35,8 @@ currDateTime = 0
 # Time to sleep, time to wake, target time, last slept, time slept, starting day
 # When sleep is recorded, and it starts on a new day, hrSlept and minSlept are wiped and replaced with the new values
 fatigueScore = 0
-hrToSleep = 0
-minToSleep = 0
-hrToWake = 0
-minToWake = 0
+timeToSleep = time(0,0,0)
+timeToWake = time(0,0,0)
 hrTarget = 0
 minTarget = 0
 lastSleptTime = 0
@@ -64,11 +62,12 @@ widget = QtWidgets.QStackedWidget()
 main_window = ""
 stats_window = ""
 log_window = ""
+override_window = ""
 
 # Writes the data into the file
 def Write_Data():
     
-    global firstDate, fatigueScore, hrToSleep, minToSleep, hrToWake, minToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
+    global firstDate, fatigueScore, timeToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
     
     Remove_Protection()
     
@@ -76,20 +75,20 @@ def Write_Data():
 
     fileData.write(f"Starting Date: {firstDate.month}/{firstDate.day}/{firstDate.year}\n")
     fileData.write(f"Fatigue Score: {fatigueScore}\n")
-    fileData.write(f"Recommended Sleep Time: {hrToSleep}:{minToSleep:02d}\n")
-    fileData.write(f"Recommended Wake Time: {hrToWake}:{minToWake:02d}\n")
+    fileData.write(f"Recommended Sleep Time: {timeToSleep.hour}:{timeToSleep.minute:02d}\n")
+    fileData.write(f"Recommended Wake Time: {timeToWake.hour}:{timeToWake.minute:02d}\n")
     fileData.write(f"Sleep duration in mins: {hrTarget * 60 + minTarget}\n")                    
     fileData.write(f"Time slept: {hrSlept * 60 + minSlept}\n")               
     fileData.write(f"Last slept: {lastSleptTime.hour}:{lastSleptTime.minute:02d}:{lastSleptTime.second:02d} {lastSleptTime.month}/{lastSleptTime.day}/{lastSleptTime.year}\n")
 
     if type(overrideStartDate) == str:
-        fileData.write(f"Override start: 0/0/0\n")
+        fileData.write(f"Override start: 1/1/1\n")
 
     else:
         fileData.write(f"Override start: {overrideStartDate.month}/{overrideStartDate.day}/{overrideStartDate.year}\n")
 
     if type(overrideEndDate) == str:
-        fileData.write(f"Override end: 0/0/0\n")
+        fileData.write(f"Override end: 1/1/1\n")
 
     else:
         fileData.write(f"Override end: {overrideEndDate.month}/{overrideEndDate.day}/{overrideEndDate.year}\n")    
@@ -106,7 +105,7 @@ def Write_Data():
 # Loads the data from the file
 def Load_Data():
      
-    global firstDate, fatigueScore, hrToSleep, minToSleep, hrToWake, minToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
+    global firstDate, fatigueScore, timeToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
         
     Remove_Protection()
     fileData = open(filePath, "r")
@@ -134,16 +133,14 @@ def Load_Data():
 
             newLine = line.split(" ")
             splitLine = newLine[-1].split(":")
-            hrToSleep = int(splitLine[0])
-            minToSleep = int(splitLine[1])
+            timeToSleep = time(int(splitLine[0]), int(splitLine[1]), 0)
 
         # Gets the sleep end time
         elif index == 3:
 
             newLine = line.split(" ")
             splitLine = newLine[-1].split(":")
-            hrToWake = int(splitLine[0])
-            minToWake = int(splitLine[1])
+            timeToWake = time(int(splitLine[0]), int(splitLine[1]), 0)
 
         # Gets the target sleep time
         elif index == 4:
@@ -175,22 +172,31 @@ def Load_Data():
         elif index == 7:
 
             newLine = line.split(": ")
-            dateLine = newLine[0].split("/")
-            overrideStartDate = datetime(int(splitLine[2]), int(splitLine[0]), int(splitLine[1]))
+            dateLine = newLine[1].split("/")
+            dateLine[2] = dateLine[2].split("\n")
+            dateLine[0] = int(dateLine[0])
+            dateLine[1] = int(dateLine[1])
+            dateLine[2] = int(dateLine[2][0])
+            overrideStartDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
 
         # Gets override
         elif index == 8:
 
             newLine = line.split(": ")
-            dateLine = newLine[0].split("/")
-            overrideEndDate = datetime(int(splitLine[2]), int(splitLine[0]), int(splitLine[1]))
+            dateLine = newLine[1].split("/")
+            dateLine[2] = dateLine[2].split("\n")
+            dateLine[0] = int(dateLine[0])
+            dateLine[1] = int(dateLine[1])
+            dateLine[2] = int(dateLine[2][0])
+            overrideEndDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
 
         # Gets override
         elif index == 9:
 
             newLine = line.split(": ")
             newLine = newLine[1].split(",")
-            overrideOffsets = int(newLine)
+            overrideOffsets[0] = int(newLine[0])
+            overrideOffsets[1] = int(newLine[1])
 
         line = fileData.readline()
         index += 1
@@ -201,7 +207,7 @@ def Load_Data():
 
 def Reset_Data():
                 
-    global firstDate, fatigueScore, hrToSleep, minToSleep, hrToWake, minToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
+    global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
     Load_Data()
     Write_Data()
 
@@ -258,6 +264,8 @@ class UI_MainWindow(QMainWindow):
         
         self.statsButton.clicked.connect(self.show_stats)
         
+        self.overrideButton.clicked.connect(self.override)
+        
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Universal Sleep Tracker", None))
@@ -273,6 +281,11 @@ class UI_MainWindow(QMainWindow):
         
         if type(log_window) is QLabel:
             log_window.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
+        
+    def override(self):
+        global widget
+        
+        widget.setCurrentIndex(3)
 
     def manual_override(self):
         pass # Manually overrides sleep schedule
@@ -323,11 +336,11 @@ class Stats_Window(QMainWindow):
             
             if index == 2:
                 
-                self.recSleep.setText(f"Recommended Sleep Time: {hrToSleep + int(overrideOffsets[0] / 60)}:{int(overrideOffsets[0] % 60) + minToSleep:02d}")
+                self.recSleep.setText(f"Recommended Sleep Time: {timeToSleep.hour + int(overrideOffsets[0] / 60)}:{int(overrideOffsets[0] % 60) + timeToSleep.minute:02d}")
             
             if index == 3:
                 
-                self.recWake.setText(f"Recommended Wake Time: {hrToWake + int(overrideOffsets[1] / 60)}:{int(overrideOffsets[1] % 60) + minToWake:02d}")
+                self.recWake.setText(f"Recommended Wake Time: {timeToWake.hour + int(overrideOffsets[1] / 60)}:{int(overrideOffsets[1] % 60) + timeToWake.minute:02d}")
             
             if index == 4:
                 
@@ -578,7 +591,7 @@ class Log_Window(QMainWindow):
                     fatigueScore = 0
                     
                 elif (fatigueScore > 100):
-                    fatigueScore = 100
+                    fatigueScore = 100                                
                 
                 hrSlept = 0
                 minSlept = 0          
@@ -587,7 +600,7 @@ class Log_Window(QMainWindow):
                 
                 hrSlept += (sleep_end - sleep_start).seconds // 3600
                 minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
-        
+    
     def back_to_main(self):
         global widget
         widget.setCurrentIndex(0)  # Switch back to the main window
@@ -602,6 +615,177 @@ class Log_Window(QMainWindow):
         self.notif.setText("")
     # retranslateUi
 
+# Override window that allows you to override
+class Override_Window(QMainWindow):
+    
+    def __init__(self):
+        
+        super(Override_Window, self).__init__()
+        self.setWindowTitle("Override Sleep Times")
+        self.setGeometry(200, 200, 800, 600)
+        self.setupUi(self)
+        
+    def setupUi(self, MainWindow):
+        if not MainWindow.objectName():
+            MainWindow.setObjectName(u"MainWindow")
+        MainWindow.resize(800, 600)
+        self.centralwidget = QWidget(MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        self.title = QLabel(self.centralwidget)
+        self.title.setObjectName(u"title")
+        self.title.setGeometry(QRect(50, 50, 300, 30))
+        font = QFont()
+        font.setPointSize(15)
+        self.title.setFont(font)
+        self.startCalendar = QCalendarWidget(self.centralwidget)
+        self.startCalendar.setObjectName(u"startCalendar")
+        self.startCalendar.setGeometry(QRect(50, 120, 256, 192))
+        self.startLabel = QLabel(self.centralwidget)
+        self.startLabel.setObjectName(u"startLabel")
+        self.startLabel.setGeometry(QRect(50, 100, 120, 15))
+        self.endLabel = QLabel(self.centralwidget)
+        self.endLabel.setObjectName(u"endLabel")
+        self.endLabel.setGeometry(QRect(50, 325, 115, 15))
+        self.endCalendar = QCalendarWidget(self.centralwidget)
+        self.endCalendar.setObjectName(u"endCalendar")
+        self.endCalendar.setGeometry(QRect(50, 345, 256, 192))
+        self.sleepStartShiftLabel = QLabel(self.centralwidget)
+        self.sleepStartShiftLabel.setObjectName(u"sleepStartShiftLabel")
+        self.sleepStartShiftLabel.setGeometry(QRect(360, 30, 200, 15))
+        self.sleepEndShiftLabel = QLabel(self.centralwidget)
+        self.sleepEndShiftLabel.setObjectName(u"sleepEndShiftLabel")
+        self.sleepEndShiftLabel.setGeometry(QRect(360, 120, 200, 15))
+        self.overrideConfirm = QPushButton(self.centralwidget)
+        self.overrideConfirm.setObjectName(u"overrideConfirm")
+        self.overrideConfirm.setGeometry(QRect(360, 450, 150, 30))
+        palette = QPalette()
+        brush = QBrush(QColor(19, 193, 0, 255))
+        brush.setStyle(Qt.BrushStyle.SolidPattern)
+        palette.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, brush)
+        palette.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, brush)
+        palette.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, brush)
+        self.overrideConfirm.setPalette(palette)
+        self.quit = QPushButton(self.centralwidget)
+        self.quit.setObjectName(u"quit")
+        self.quit.setGeometry(QRect(360, 500, 150, 30))
+        palette1 = QPalette()
+        brush1 = QBrush(QColor(240, 0, 4, 255))
+        brush1.setStyle(Qt.BrushStyle.SolidPattern)
+        palette1.setBrush(QPalette.ColorGroup.Active, QPalette.ColorRole.Button, brush1)
+        palette1.setBrush(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Button, brush1)
+        palette1.setBrush(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button, brush1)
+        self.quit.setPalette(palette1)
+        self.sleepShiftStart = QTextEdit(self.centralwidget)
+        self.sleepShiftStart.setObjectName(u"sleepShiftStart")
+        self.sleepShiftStart.setGeometry(QRect(360, 60, 200, 30))
+        self.sleepShiftEnd = QTextEdit(self.centralwidget)
+        self.sleepShiftEnd.setObjectName(u"sleepShiftEnd")
+        self.sleepShiftEnd.setGeometry(QRect(360, 150, 200, 30))
+        self.info = QLabel(self.centralwidget)
+        self.info.setObjectName(u"info")
+        self.info.setGeometry(QRect(360, 200, 351, 231))
+        self.info.setWordWrap(True)
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QMenuBar(MainWindow)
+        self.menubar.setObjectName(u"menubar")
+        self.menubar.setGeometry(QRect(0, 0, 800, 33))
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QStatusBar(MainWindow)
+        self.statusbar.setObjectName(u"statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MainWindow)
+
+        QMetaObject.connectSlotsByName(MainWindow)
+        
+        self.quit.clicked.connect(self.return_home)
+        self.overrideConfirm.clicked.connect(self.override_set)
+        
+    # setupUi
+    
+    def override_set(self):
+        global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
+
+        # Create a timezone using an IANA text ID
+        tz_id = QByteArray(b"Europe/Paris")
+        time_zone = QTimeZone(tz_id)
+        startingShift = self.startCalendar.selectedDate()
+        endingShift = self.endCalendar.selectedDate()        
+        startingShiftAdjusted = datetime(int(startingShift.year()), int(startingShift.month()), int(startingShift.day()))
+        endingShiftAdjusted = datetime(int(endingShift.year()), int(endingShift.month()), int(endingShift.day()))
+        Update_Time()
+        
+        if overrideEndDate.date() >= currDateTime.date():
+            self.info.setText("Override already exists")
+            self.info.setStyleSheet("color: red;")
+        
+        elif startingShiftAdjusted.date() < currDateTime.date():
+            self.info.setText("Please select a today or a day in the future")
+            self.info.setStyleSheet("color: red;")
+            
+        elif endingShiftAdjusted.date() < startingShiftAdjusted.date():
+            self.info.setText("Ending date must be after the starting date")
+            self.info.setStyleSheet("color: red;")
+                        
+        else:
+            
+            startInput = self.sleepShiftStart.toPlainText()
+            endInput = self.sleepShiftEnd.toPlainText()
+            intStartInput = 0
+            intEndInput = 0
+            
+            try:
+                intStartInput = int(startInput)
+                intEndInput = int(endInput)
+                print(abs(intStartInput))
+                print(abs(intEndInput))
+                
+                if abs(intStartInput) > 300 or abs(intEndInput) > 300:
+                    self.info.setText("Your sleep schedule cannot shift by more than 5 hours")
+                    self.info.setStyleSheet("color: red;")
+                    
+                else:                    
+                    self.info.setText("Override set!")
+                    self.info.setStyleSheet("color: green;")
+                    overrideStartDate = datetime(startingShift.year(), startingShift.month(), startingShift.day())
+                    overrideEndDate = datetime(endingShift.year(), endingShift.month(), endingShift.day())
+                    overrideOffsets[0] = intStartInput
+                    overrideOffsets[1] = intEndInput
+                    minTarget -= overrideOffsets[0]
+                    minTarget += overrideOffsets[1]
+                    hrTarget += minTarget // 60
+                    minTarget = minTarget % 60
+                    Write_Data()
+                
+            except:                
+                self.info.setText("Please enter a numerical value")
+                self.info.setStyleSheet("color: red;")
+            
+            if True:
+                pass
+            
+            else:
+                self.info.setText("Override set!")
+                self.info.setStyleSheet("color: green;")
+                overrideStartDate = datetime(startingShift.year(), startingShift.month(), startingShift.day())
+                overrideEndDate = datetime(endingShift.year(), endingShift.month(), endingShift.day())
+    
+    def return_home(self):
+        global widget
+        widget.setCurrentIndex(0)
+
+    def retranslateUi(self, MainWindow):
+        MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
+        self.title.setText(QCoreApplication.translate("MainWindow", u"Override", None))
+        self.startLabel.setText(QCoreApplication.translate("MainWindow", u"Enter start of override", None))
+        self.endLabel.setText(QCoreApplication.translate("MainWindow", u"Enter end of override", None))
+        self.sleepStartShiftLabel.setText(QCoreApplication.translate("MainWindow", u"Sleep start override (time in minutes)", None))
+        self.sleepEndShiftLabel.setText(QCoreApplication.translate("MainWindow", u"Sleep end override (time in minutes)", None))
+        self.overrideConfirm.setText(QCoreApplication.translate("MainWindow", u"Override", None))
+        self.quit.setText(QCoreApplication.translate("MainWindow", u"Quit", None))
+        self.info.setText(QCoreApplication.translate("MainWindow", u"When offsetting, negative numbers indicate earlier sleep and positive numbers indicate later sleep", None))
+    # retranslateUi
+
 # Actually runs the program, this is where the main window is created and shown
 def window():
     
@@ -614,6 +798,8 @@ def window():
     widget.addWidget(stats_window)
     log_window = Log_Window()
     widget.addWidget(log_window)
+    override_window = Override_Window()
+    widget.addWidget(override_window)
     widget.show()
     sys.exit(app.exec())
 
@@ -635,7 +821,7 @@ def Remove_Protection():
 # Protection should be removed first, then readded
 def Add_Protection():
 
-    FILE_ATTRIBUTE_PROTECTED = None
+    FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
 
 # Set up
@@ -655,8 +841,8 @@ except:
     fileData.write("Sleep duration in mins: 480\n")
     fileData.write("Time slept: 0\n")
     fileData.write("Last slept: " + str(currDateTime.hour) + ":" + str(currDateTime.minute) + ":" + str(currDateTime.second) + " " + str(currDateTime.month) + "/" + str(currDateTime.day) + "/" + str(currDateTime.year) + "\n")
-    fileData.write("Override start: 0/0/0 \n")
-    fileData.write("Override end: 0/0/0 \n")
+    fileData.write("Override start: 1/1/1 \n")
+    fileData.write("Override end: 1/1/1 \n")
     fileData.write("Override offset: " + str(overrideOffsets[0]) + "," + str(overrideOffsets[1]))
                 
 
@@ -688,17 +874,15 @@ while line:
     elif index == 2:
 
         newLine = line.split(" ")
-        splitLine = newLine[-1].split(":")
-        hrToSleep = int(splitLine[0])
-        minToSleep = int(splitLine[1])
+        splitLine = newLine[-1].split(":")        
+        timeToSleep = time(int(splitLine[0]), int(splitLine[1]), 0)
 
     # Gets the sleep end time
     elif index == 3:
 
         newLine = line.split(" ")
         splitLine = newLine[-1].split(":")
-        hrToWake = int(splitLine[0])
-        minToWake = int(splitLine[1])
+        timeToWake = time(int(splitLine[0]), int(splitLine[1]), 0)
 
     # Gets the target sleep time
     elif index == 4:
@@ -706,7 +890,21 @@ while line:
         newLine = line.split(" ")
         minTarget = int(newLine[-1]) % 60
         hrTarget = int(newLine[-1]) // 60
-
+        
+        if (timeToSleep > timeToWake):
+            timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day + 1, timeToWake.hour, timeToWake.minute)
+            timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
+            diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
+            minTarget = diff.minute
+            hrTarget = diff.hour            
+        
+        else:
+            timeToWakeDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToWake.hour, timeToWake.minute)
+            timeToSleepDate = datetime(currDateTime.year, currDateTime.month, currDateTime.day, timeToSleep.hour, timeToSleep.minute)
+            diff = timeToWakeDate - timedelta(timeToSleepDate.day, 0, 0, 0, timeToSleepDate.minute, timeToSleepDate.hour, 0)
+            minTarget = diff.minute
+            hrTarget = diff.hour
+            
     # Gets the time slept
     elif index == 5:
 
@@ -724,6 +922,44 @@ while line:
         dateLine = newLine[1].split("/")
 
         lastSleptTime = datetime(int(dateLine[2]), int(dateLine[1]), int(dateLine[0]), int(timeLine[0]), int(timeLine[1]), int(timeLine[2]))
+
+    # Gets override
+    elif index == 7:
+
+        newLine = line.split(": ")
+        dateLine = newLine[1].split("/")
+        dateLine[2] = dateLine[2].split("\n")
+        dateLine[0] = int(dateLine[0])
+        dateLine[1] = int(dateLine[1])
+        dateLine[2] = int(dateLine[2][0])
+        overrideStartDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
+
+    # Gets override
+    elif index == 8:
+
+        newLine = line.split(": ")
+        dateLine = newLine[1].split("/")
+        dateLine[2] = dateLine[2].split("\n")
+        dateLine[0] = int(dateLine[0])
+        dateLine[1] = int(dateLine[1])
+        dateLine[2] = int(dateLine[2][0])
+        overrideEndDate = datetime(int(dateLine[2]), int(dateLine[0]), int(dateLine[1]))
+
+    # Gets override
+    elif index == 9:
+
+        newLine = line.split(": ")
+        newLine = newLine[1].split(",")
+        
+        if currDateTime.date() >= overrideStartDate.date() and currDateTime.date() <= overrideEndDate.date():
+        
+            overrideOffsets[0] = int(newLine[0])
+            overrideOffsets[1] = int(newLine[1])
+            
+        else:
+            
+            overrideOffsets[0] = 0
+            overrideOffsets[1] = 0
 
     line = fileData.readline()
     index += 1
