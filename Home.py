@@ -53,10 +53,13 @@ overrideOffsets = [0, 0]
 # These values are not associated with sleep timings, rather they are centered around recommendations
 # Because recommendations are time sensitive and don't need to be saved between sessions, they aren't saved to a file
 shouldExercise = False
-shouldTakeSleepMeds = False
+shouldSleep = False
+shouldNap = False
 canEat = False
 canHaveCaffiene = False
+canTakeSleepMeds = False
 canHaveLight = False
+canNap = False
 
 # Sets up the ui
 app = QApplication(sys.argv)
@@ -109,7 +112,8 @@ def Write_Data():
 def Load_Data():
      
     global firstDate, fatigueScore, timeToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
-        
+    global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+
     Remove_Protection()
     fileData = open(filePath, "r")
     line = fileData.readline()
@@ -227,11 +231,59 @@ def Load_Data():
 
     fileData.close()
 
-    Add_Protection() 
+    Add_Protection()
+
+    # These local methods are inteded to give recommendations based on the time
+    
+    # When the user should be sleeping
+    def Sleep_Time():
+        
+        shouldSleep = True
+        shouldNap = False
+        shouldExercise = False
+        canNap = False
+        canEat = False
+        canHaveCaffiene = False
+        canHaveLight = False
+        canTakeSleepMeds = True
+
+    # When the user is fully awake
+    def Fully_Awake():
+        pass
+
+    # User is still awake, but its too late for caffiene
+    def After_Eight_Hours():
+        pass
+
+    # User is supposed to be sleeping soon, two hours before sleep
+    def Two_Hours_Before():
+        pass
+
+    # User sleeps soon
+    def Fifteen_Minutes_Before():
+        pass
+
+    # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
+
+    if timeToSleep > timeToWake: # Cases where the user sleeps and wakes on seperate days, like 11PM to 7AM
+        
+        if timeToSleep < currDateTime.time() or currDateTime.time() < timeToWake: # This is during the time the user should be sleeping
+            Sleep_Time()
+
+        print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
+
+    else: # Cases where the user sleeps and wakes the same day, like 12AM to 8AM
+        
+        if timeToSleep < currDateTime.time() < timeToWake: # This is during the time where the user should be sleeping
+            Sleep_Time()
+
+        print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
+        
 
 def Reset_Data():
                 
     global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
+    global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
     Load_Data()
     Write_Data()
 

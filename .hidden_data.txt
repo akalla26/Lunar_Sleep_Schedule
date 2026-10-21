@@ -7,4 +7,4 @@ Time slept: 0
 Last slept: 3:00:00 10/7/2026
 Override start: 10/19/2026
 Override end: 10/19/2026
-Override offset: 14,14
+Override offset: 0,0
