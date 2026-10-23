@@ -249,37 +249,99 @@ def Load_Data():
 
     # When the user is fully awake
     def Fully_Awake():
-        pass
+
+        shouldSleep = False
+        shouldNap = False
+        shouldExercise = True
+        canNap = False
+        canEat = True
+        canHaveCaffiene = True
+        canHaveLight = True
+        canTakeSleepMeds = False
 
     # User is still awake, but its too late for caffiene
     def After_Eight_Hours():
-        pass
+        
+        shouldSleep = False
+        shouldNap = False
+        shouldExercise = True
+        canNap = True
+        canEat = True
+        canHaveCaffiene = False
+        canHaveLight = True
+        canTakeSleepMeds = False
 
     # User is supposed to be sleeping soon, two hours before sleep
     def Two_Hours_Before():
-        pass
+
+        shouldSleep = False
+        shouldNap = False
+        shouldExercise = False
+        canNap = False
+        canEat = True
+        canHaveCaffiene = False
+        canHaveLight = True
+        canTakeSleepMeds = False
 
     # User sleeps soon
     def Fifteen_Minutes_Before():
-        pass
+
+        shouldSleep = True
+        shouldNap = False
+        shouldExercise = False
+        canNap = False
+        canEat = False
+        canHaveCaffiene = False
+        canHaveLight = False
+        canTakeSleepMeds = True
 
     # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
+    def Nap_Time():
 
-    if timeToSleep > timeToWake: # Cases where the user sleeps and wakes on seperate days, like 11PM to 7AM
-        
-        if timeToSleep < currDateTime.time() or currDateTime.time() < timeToWake: # This is during the time the user should be sleeping
+        shouldNap = True
+
+    # Sleep times that adjusts to the offsets
+    timeToSleepOffsetted = (datetime.combine(currDateTime.date(), timeToSleep) + timedelta(0, 0, overrideOffsets[0] % 60, overrideOffsets[0] // 60))
+    timeToWakeOffsetted = (datetime.combine(currDateTime.date(), timeToWake) + timedelta(0, 0, overrideOffsets[1] % 60, overrideOffsets[1] // 60))
+    
+    timeToSleepOffsetted = time(timeToSleepOffsetted.hour, timeToSleepOffsetted.minute, 0)
+    timeToWakeOffsetted = time(timeToWakeOffsetted.hour, timeToWakeOffsetted.minute, 0)
+
+    if timeToSleepOffsetted > timeToWakeOffsetted: # Cases where the user sleeps and wakes on seperate days, like 11PM to 7AM
+
+        timeLeftTillSleep = datetime.combine(currDateTime.date(), timeToSleepOffsetted) - timedelta(days=0, seconds=currDateTime.second, minutes=currDateTime.minute, hours=currDateTime.hour)
+        timeToSleep = time(timeLeftTillSleep.hour, timeLeftTillSleep.minute, timeLeftTillSleep.second) # Calulates how long the user has until its time for them to sleep
+
+        print(currDateTime)
+        print(timeToWakeOffsetted)
+
+        if timeToSleepOffsetted < currDateTime.time() or currDateTime.time() < timeToWake: # This is during the time the user should be sleeping
             Sleep_Time()
+            print("sleep time")
 
-        print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
+        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 15: # 15 minutes before they sleep
+            Fifteen_Minutes_Before()
+            print("fifteen before")
+
+        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 120: # 2 hours before sleep
+            Two_Hours_Before()
+            print("120 before")
+
+        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 15: # After the user has been awake for 8+ hours (NOT FINISHED YET!)
+            After_Eight_Hours()
+            print("8 passed")
+
+        else:
+            Fully_Awake()
+            print("awake")
 
     else: # Cases where the user sleeps and wakes the same day, like 12AM to 8AM
         
-        if timeToSleep < currDateTime.time() < timeToWake: # This is during the time where the user should be sleeping
+        if timeToSleepOffsetted < currDateTime.time() < timeToWake: # This is during the time where the user should be sleeping
             Sleep_Time()
 
-        print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
+        #print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
         
-
 def Reset_Data():
                 
     global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
@@ -942,7 +1004,7 @@ def Remove_Protection():
 # Protection should be removed first, then readded
 def Add_Protection():
 
-    FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
+    FILE_ATTRIBUTE_PROTECTED = None #0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
 
 # Set up
