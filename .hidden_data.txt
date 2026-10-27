@@ -1,10 +1,10 @@
 Starting Date: 10/3/2026
-Fatigue Score: 30
-Recommended Sleep Time: 22:30
-Recommended Wake Time: 6:30
+Fatigue Score: 0
+Recommended Sleep Time: 1:30
+Recommended Wake Time: 9:30
 Sleep duration in mins: 480
-Time slept: 0
-Last slept: 3:00:00 10/7/2026
+Time slept: 780
+Last slept: 12:00:00 10/9/2026
 Override start: 10/19/2026
 Override end: 10/19/2026
 Override offset: 0,0

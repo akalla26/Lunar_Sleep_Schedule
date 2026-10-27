@@ -61,6 +61,12 @@ canTakeSleepMeds = False
 canHaveLight = False
 canNap = False
 
+isSleeping = False
+fifteen_minutes_before_sleep = False
+two_hours_before_sleep = False
+eight_hours_after_sleep = False
+awake = False
+
 # Sets up the ui
 app = QApplication(sys.argv)
 widget = QtWidgets.QStackedWidget()
@@ -113,6 +119,7 @@ def Load_Data():
      
     global firstDate, fatigueScore, timeToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
     global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+    global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
 
     Remove_Protection()
     fileData = open(filePath, "r")
@@ -245,7 +252,14 @@ def Load_Data():
         canEat = False
         canHaveCaffiene = False
         canHaveLight = False
-        canTakeSleepMeds = True
+        canTakeSleepMeds = True        
+
+        isSleeping = True
+        fifteen_minutes_before_sleep = False
+        two_hours_before_sleep = False
+        eight_hours_after_sleep = False
+        awake = False
+
 
     # When the user is fully awake
     def Fully_Awake():
@@ -257,7 +271,13 @@ def Load_Data():
         canEat = True
         canHaveCaffiene = True
         canHaveLight = True
-        canTakeSleepMeds = False
+        canTakeSleepMeds = False    
+
+        isSleeping = False
+        fifteen_minutes_before_sleep = False
+        two_hours_before_sleep = False
+        eight_hours_after_sleep = False
+        awake = True
 
     # User is still awake, but its too late for caffiene
     def After_Eight_Hours():
@@ -271,6 +291,12 @@ def Load_Data():
         canHaveLight = True
         canTakeSleepMeds = False
 
+        isSleeping = False
+        fifteen_minutes_before_sleep = False
+        two_hours_before_sleep = False
+        eight_hours_after_sleep = True
+        awake = False
+
     # User is supposed to be sleeping soon, two hours before sleep
     def Two_Hours_Before():
 
@@ -281,7 +307,13 @@ def Load_Data():
         canEat = True
         canHaveCaffiene = False
         canHaveLight = True
-        canTakeSleepMeds = False
+        canTakeSleepMeds = False    
+
+        isSleeping = False
+        fifteen_minutes_before_sleep = False
+        two_hours_before_sleep = True
+        eight_hours_after_sleep = False
+        awake = False
 
     # User sleeps soon
     def Fifteen_Minutes_Before():
@@ -293,12 +325,13 @@ def Load_Data():
         canEat = False
         canHaveCaffiene = False
         canHaveLight = False
-        canTakeSleepMeds = True
+        canTakeSleepMeds = True    
 
-    # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
-    def Nap_Time():
-
-        shouldNap = True
+        isSleeping = False
+        fifteen_minutes_before_sleep = True
+        two_hours_before_sleep = False
+        eight_hours_after_sleep = False
+        awake = False
 
     # Sleep times that adjusts to the offsets
     timeToSleepOffsetted = (datetime.combine(currDateTime.date(), timeToSleep) + timedelta(0, 0, overrideOffsets[0] % 60, overrideOffsets[0] // 60))
@@ -307,45 +340,59 @@ def Load_Data():
     timeToSleepOffsetted = time(timeToSleepOffsetted.hour, timeToSleepOffsetted.minute, 0)
     timeToWakeOffsetted = time(timeToWakeOffsetted.hour, timeToWakeOffsetted.minute, 0)
 
+    # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
+    
     if timeToSleepOffsetted > timeToWakeOffsetted: # Cases where the user sleeps and wakes on seperate days, like 11PM to 7AM
 
         timeLeftTillSleep = datetime.combine(currDateTime.date(), timeToSleepOffsetted) - timedelta(days=0, seconds=currDateTime.second, minutes=currDateTime.minute, hours=currDateTime.hour)
-        timeToSleep = time(timeLeftTillSleep.hour, timeLeftTillSleep.minute, timeLeftTillSleep.second) # Calulates how long the user has until its time for them to sleep
+        timeLeftTillSleep = time(timeLeftTillSleep.hour, timeLeftTillSleep.minute, timeLeftTillSleep.second) # Calulates how long the user has until its time for them to sleep
 
-        print(currDateTime)
-        print(timeToWakeOffsetted)
+        timeSinceWake = currDateTime - timedelta(days=0, seconds=0, minutes=timeToWakeOffsetted.minute, hours=timeToWakeOffsetted.hour)
+        timeSinceWake = time(timeSinceWake.hour, timeSinceWake.minute, timeSinceWake.second) # Calulates how long the user has been awake
 
         if timeToSleepOffsetted < currDateTime.time() or currDateTime.time() < timeToWake: # This is during the time the user should be sleeping
             Sleep_Time()
-            print("sleep time")
 
         elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 15: # 15 minutes before they sleep
             Fifteen_Minutes_Before()
-            print("fifteen before")
 
         elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 120: # 2 hours before sleep
             Two_Hours_Before()
-            print("120 before")
 
-        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 15: # After the user has been awake for 8+ hours (NOT FINISHED YET!)
+        elif timeSinceWake.hour * 60 > 480: # After the user has been awake for 8+ hours
             After_Eight_Hours()
-            print("8 passed")
 
         else:
             Fully_Awake()
-            print("awake")
 
     else: # Cases where the user sleeps and wakes the same day, like 12AM to 8AM
+
+        timeLeftTillSleep = datetime.combine(currDateTime.date(), timeToSleepOffsetted) - timedelta(days=0, seconds=currDateTime.second, minutes=currDateTime.minute, hours=currDateTime.hour)
+        timeLeftTillSleep = time(timeLeftTillSleep.hour, timeLeftTillSleep.minute, timeLeftTillSleep.second) # Calulates how long the user has until its time for them to sleep
+
+        timeSinceWake = (currDateTime + timedelta(days=1)) - timedelta(days=0, seconds=0, minutes=timeToWakeOffsetted.minute, hours=timeToWakeOffsetted.hour)
+        timeSinceWake = time(timeSinceWake.hour, timeSinceWake.minute, timeSinceWake.second) # Calulates how long the user has been awake
         
         if timeToSleepOffsetted < currDateTime.time() < timeToWake: # This is during the time where the user should be sleeping
             Sleep_Time()
 
-        #print(datetime.combine(date.today(), timeToSleep) - datetime.combine(date.today(), timeToWake))
+        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 15: # 15 minutes before they sleep
+            Fifteen_Minutes_Before()
+
+        elif (timeLeftTillSleep.hour) * 60 + timeLeftTillSleep.minute <= 120: # 2 hours before sleep
+            Two_Hours_Before()
+
+        elif timeSinceWake.hour * 60 > 480: # After the user has been awake for 8+ hours (NOT FINISHED YET!)
+            After_Eight_Hours()
+
+        else:
+            Fully_Awake()
         
 def Reset_Data():
                 
     global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
     global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+    global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
     Load_Data()
     Write_Data()
 
@@ -416,6 +463,7 @@ class UI_MainWindow(QMainWindow):
         global widget
         
         widget.setCurrentIndex(2)  # Switch to the log window
+        print(widget.currentIndex())
         
         if type(log_window) is QLabel:
             log_window.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
@@ -690,7 +738,10 @@ class Log_Window(QMainWindow):
         else:
             
             self.notif.setText("Successfully logged!")
-            self.notif.setStyleSheet("color: green;")           
+            self.notif.setStyleSheet("color: green;")
+
+            print(sleep_start.date())
+            print(sleep_end.date()) 
                  
             if (sleep_start.date() == sleep_end.date()):                
                 
@@ -698,9 +749,13 @@ class Log_Window(QMainWindow):
                 hrSlept += (sleep_end - sleep_start).seconds // 3600
                 minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
                 
-                Reset_Data()
+                Write_Data()
+                Load_Data()
                 
             else:
+
+                print(sleep_start_adjusted.date().day())
+                print(lastSleptTime.day)
                                 
                 lastSleptTime = sleep_end
                 
@@ -732,8 +787,9 @@ class Log_Window(QMainWindow):
                 
                 hrSlept = 0
                 minSlept = 0          
-                    
-                Reset_Data()
+                
+                Write_Data()
+                Load_Data()
                 
                 hrSlept += (sleep_end - sleep_start).seconds // 3600
                 minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
@@ -962,7 +1018,11 @@ class Recommendation_Window(QMainWindow):
         self.returnHome.setText(QCoreApplication.translate("MainWindow", u"Return", None))
         self.recommendationLabel.setText("")
     # retranslateUi
-        
+
+    def set_text(self):
+
+        pass
+
     def back_to_main(self):
         global widget
         widget.setCurrentIndex(0)  # Switch back to the main window
@@ -984,8 +1044,9 @@ def window():
     recommendation_window = Recommendation_Window()
     widget.addWidget(recommendation_window)
     widget.show()
+    
     sys.exit(app.exec())
-
+    
 # Updates the current time
 def Update_Time():
 
