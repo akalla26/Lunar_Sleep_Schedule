@@ -1,3 +1,4 @@
+import random
 # Importing the necessary modules
 import gc
 from time import sleep
@@ -244,6 +245,9 @@ def Load_Data():
     
     # When the user should be sleeping
     def Sleep_Time():
+    
+        global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+        global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
         
         shouldSleep = True
         shouldNap = False
@@ -263,11 +267,14 @@ def Load_Data():
 
     # When the user is fully awake
     def Fully_Awake():
+    
+        global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+        global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
 
         shouldSleep = False
         shouldNap = False
         shouldExercise = True
-        canNap = False
+        canNap = True
         canEat = True
         canHaveCaffiene = True
         canHaveLight = True
@@ -281,6 +288,9 @@ def Load_Data():
 
     # User is still awake, but its too late for caffiene
     def After_Eight_Hours():
+    
+        global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+        global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
         
         shouldSleep = False
         shouldNap = False
@@ -299,6 +309,9 @@ def Load_Data():
 
     # User is supposed to be sleeping soon, two hours before sleep
     def Two_Hours_Before():
+    
+        global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+        global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
 
         shouldSleep = False
         shouldNap = False
@@ -317,6 +330,9 @@ def Load_Data():
 
     # User sleeps soon
     def Fifteen_Minutes_Before():
+    
+        global shouldExercise, shouldNap, shouldSleep, canTakeSleepMeds, canHaveLight, canHaveCaffiene, canEat, canNap
+        global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
 
         shouldSleep = True
         shouldNap = False
@@ -340,8 +356,6 @@ def Load_Data():
     timeToSleepOffsetted = time(timeToSleepOffsetted.hour, timeToSleepOffsetted.minute, 0)
     timeToWakeOffsetted = time(timeToWakeOffsetted.hour, timeToWakeOffsetted.minute, 0)
 
-    # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
-    
     if timeToSleepOffsetted > timeToWakeOffsetted: # Cases where the user sleeps and wakes on seperate days, like 11PM to 7AM
 
         timeLeftTillSleep = datetime.combine(currDateTime.date(), timeToSleepOffsetted) - timedelta(days=0, seconds=currDateTime.second, minutes=currDateTime.minute, hours=currDateTime.hour)
@@ -387,7 +401,11 @@ def Load_Data():
 
         else:
             Fully_Awake()
-        
+     
+    # If at any point the user's fatigue score is calculated to be too low, they are allowed to nap if it isn't too close to sleeping time
+    if canNap and fatigueScore > 50:
+        shouldNap = True
+
 def Reset_Data():
                 
     global firstDate, fatigueScore, timeToSleep, minToSleep, timeToWake, hrTarget, minTarget, minSlept, hrSlept, lastSleptTime, overrideStartDate, overrideEndDate, overrideOffsets
@@ -463,7 +481,6 @@ class UI_MainWindow(QMainWindow):
         global widget
         
         widget.setCurrentIndex(2)  # Switch to the log window
-        print(widget.currentIndex())
         
         if type(log_window) is QLabel:
             log_window.notif.setText("Error: Sleep start time must be before sleep end time on the same day.")
@@ -739,9 +756,6 @@ class Log_Window(QMainWindow):
             
             self.notif.setText("Successfully logged!")
             self.notif.setStyleSheet("color: green;")
-
-            print(sleep_start.date())
-            print(sleep_end.date()) 
                  
             if (sleep_start.date() == sleep_end.date()):                
                 
@@ -753,10 +767,7 @@ class Log_Window(QMainWindow):
                 Load_Data()
                 
             else:
-
-                print(sleep_start_adjusted.date().day())
-                print(lastSleptTime.day)
-                                
+                                                
                 lastSleptTime = sleep_end
                 
                 hrDiff = hrSlept - hrTarget
@@ -1019,9 +1030,29 @@ class Recommendation_Window(QMainWindow):
         self.recommendationLabel.setText("")
     # retranslateUi
 
+    def showEvent(self, event):
+        self.set_text()
+        super().showEvent(event)
+
     def set_text(self):
 
-        pass
+        if isSleeping:
+            self.recommendationLabel.setText("Its time to sleep.\nTurn off the lights, avoid eating snacks, and relax.\nIf you need sleep medication to help you sleep, please do so.")
+
+        elif fifteen_minutes_before_sleep:
+            self.recommendationLabel.setText("Time to wind down.\nAvoid bright lights, relax, and don't eat\nIf you need sleep medication to help you fall alseep, please do so soon.")
+
+        elif two_hours_before_sleep:
+            self.recommendationLabel.setText("Let's take some steps to better your sleep soon.\nKeep stay away from caffiene and strenuous activities not related to your missions.")
+
+        elif eight_hours_after_sleep:
+            self.recommendationLabel.setText("It's too late for caffiene now, but you can still exercise if you want to wake yourself up.")
+
+        else:
+            self.recommendationLabel.setText("Rise and Shine!\nDo some light exercise or take some caffiene if you still need to wake yourself up.")
+
+        if shouldNap:
+            self.recommendationLabel.setText(self.recommendationLabel.text() + "\nIf you're feeling exhausted, take a nap as needed.")
 
     def back_to_main(self):
         global widget
@@ -1065,7 +1096,7 @@ def Remove_Protection():
 # Protection should be removed first, then readded
 def Add_Protection():
 
-    FILE_ATTRIBUTE_PROTECTED = None #0x02 | 0x04
+    FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
 
 # Set up
