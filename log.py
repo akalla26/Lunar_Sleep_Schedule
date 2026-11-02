@@ -15,9 +15,9 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QFont, QFontDatabase, QGradient, QIcon,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
-from PySide6.QtWidgets import (QApplication, QDateTimeEdit, QLabel, QMainWindow,
+from PySide6.QtWidgets import (QApplication, QCalendarWidget, QLabel, QMainWindow,
     QMenuBar, QPushButton, QSizePolicy, QStatusBar,
-    QWidget)
+    QTimeEdit, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -26,12 +26,6 @@ class Ui_MainWindow(object):
         MainWindow.resize(800, 600)
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
-        self.sleepStartLog = QDateTimeEdit(self.centralwidget)
-        self.sleepStartLog.setObjectName(u"sleepStartLog")
-        self.sleepStartLog.setGeometry(QRect(50, 200, 200, 30))
-        self.sleepEndLog = QDateTimeEdit(self.centralwidget)
-        self.sleepEndLog.setObjectName(u"sleepEndLog")
-        self.sleepEndLog.setGeometry(QRect(50, 350, 200, 30))
         self.title = QLabel(self.centralwidget)
         self.title.setObjectName(u"title")
         self.title.setGeometry(QRect(50, 50, 300, 30))
@@ -60,17 +54,29 @@ class Ui_MainWindow(object):
         self.cancelLog.setPalette(palette1)
         self.sleepStartTitle = QLabel(self.centralwidget)
         self.sleepStartTitle.setObjectName(u"sleepStartTitle")
-        self.sleepStartTitle.setGeometry(QRect(50, 150, 300, 30))
+        self.sleepStartTitle.setGeometry(QRect(50, 110, 300, 30))
         font1 = QFont()
         font1.setPointSize(9)
         self.sleepStartTitle.setFont(font1)
         self.sleepEndTitle = QLabel(self.centralwidget)
         self.sleepEndTitle.setObjectName(u"sleepEndTitle")
-        self.sleepEndTitle.setGeometry(QRect(50, 300, 300, 30))
+        self.sleepEndTitle.setGeometry(QRect(480, 110, 300, 30))
         self.sleepEndTitle.setFont(font1)
         self.notif = QLabel(self.centralwidget)
         self.notif.setObjectName(u"notif")
-        self.notif.setGeometry(QRect(500, 200, 200, 100))
+        self.notif.setGeometry(QRect(510, 430, 200, 100))
+        self.sleepStartLogDate = QCalendarWidget(self.centralwidget)
+        self.sleepStartLogDate.setObjectName(u"sleepStartLogDate")
+        self.sleepStartLogDate.setGeometry(QRect(50, 210, 256, 192))
+        self.sleepEndLogDate = QCalendarWidget(self.centralwidget)
+        self.sleepEndLogDate.setObjectName(u"sleepEndLogDate")
+        self.sleepEndLogDate.setGeometry(QRect(480, 210, 256, 192))
+        self.sleepStartLogTime = QTimeEdit(self.centralwidget)
+        self.sleepStartLogTime.setObjectName(u"sleepStartLogTime")
+        self.sleepStartLogTime.setGeometry(QRect(50, 160, 150, 30))
+        self.sleepEndLogTime = QTimeEdit(self.centralwidget)
+        self.sleepEndLogTime.setObjectName(u"sleepEndLogTime")
+        self.sleepEndLogTime.setGeometry(QRect(480, 160, 150, 30))
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
