@@ -681,6 +681,7 @@ class Log_Window(QMainWindow):
         self.notif = QLabel(self.centralwidget)
         self.notif.setObjectName(u"notif")
         self.notif.setGeometry(QRect(510, 430, 200, 100))
+        self.notif.setWordWrap(True)
         self.sleepStartLogDate = QCalendarWidget(self.centralwidget)
         self.sleepStartLogDate.setObjectName(u"sleepStartLogDate")
         self.sleepStartLogDate.setGeometry(QRect(50, 210, 256, 192))
@@ -720,21 +721,19 @@ class Log_Window(QMainWindow):
         tz_id = QByteArray(b"Europe/Paris")
         time_zone = QTimeZone(tz_id)
         
-        #sleep_start = self.sleepStartLog.dateTime().toPython().replace(tzinfo=timezone.utc)
-        #sleep_end = self.sleepEndLog.dateTime().toPython().replace(tzinfo=timezone.utc)
-        
         sleep_start = self.sleepStartLogDate.selectedDate()
         sleep_start_time = self.sleepStartLogTime.time().toPython().replace(tzinfo=timezone.utc)
-        print(str(sleep_start_time))
         sleep_start = datetime(sleep_start.year(), sleep_start.month(), sleep_start.day(), sleep_start_time.hour, sleep_start_time.minute, 0)
         
         sleep_end = self.sleepEndLogDate.selectedDate()
         sleep_end_time = self.sleepEndLogTime.time().toPython().replace(tzinfo=timezone.utc)
-        print(str(sleep_end_time))
-        sleep_start = datetime(sleep_end.year(), sleep_end.month(), sleep_end.day(), sleep_end_time.hour, sleep_end_time.minute, 0)
+        sleep_end = datetime(sleep_end.year(), sleep_end.month(), sleep_end.day(), sleep_end_time.hour, sleep_end_time.minute, 0)
 
-        sleep_start_adjusted = QDateTime(sleep_start).toTimeZone(time_zone)
-        sleep_end_adjusted = QDateTime(sleep_end).toTimeZone(time_zone)
+        qsleep_start = QDateTime(sleep_start.year, sleep_start.month, sleep_start.day, sleep_start.hour, sleep_start.minute, 0)
+        qsleep_end = QDateTime(sleep_end.year, sleep_end.month, sleep_end.day, sleep_end.hour, sleep_end.minute, 0)
+
+        sleep_start_adjusted = QDateTime(qsleep_start).toTimeZone(time_zone)
+        sleep_end_adjusted = QDateTime(qsleep_end).toTimeZone(time_zone)
         
         Update_Time()  # Update the current time to ensure we have the latest time for validation
         
@@ -829,7 +828,7 @@ class Log_Window(QMainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"MainWindow", None))
         self.title.setText(QCoreApplication.translate("MainWindow", u"Enter Sleep Log", None))
         self.logSleep.setText(QCoreApplication.translate("MainWindow", u"Log Sleep", None))
-        self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Exit", None))
+        self.cancelLog.setText(QCoreApplication.translate("MainWindow", u"Cancel", None))
         self.sleepStartTitle.setText(QCoreApplication.translate("MainWindow", u"Enter start time of sleep", None))
         self.sleepEndTitle.setText(QCoreApplication.translate("MainWindow", u"Enter end time of sleep", None))
         self.notif.setText("")
