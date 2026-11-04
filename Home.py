@@ -1111,7 +1111,7 @@ def Remove_Protection():
 # Protection should be removed first, then readded
 def Add_Protection():
 
-    FILE_ATTRIBUTE_PROTECTED = None# 0x02 | 0x04
+    FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
 
 # Set up
