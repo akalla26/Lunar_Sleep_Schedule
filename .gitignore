@@ -1,4 +1,6 @@
 *.exe
 *.ui
 *.py
+*.txt
+*.svg
 !Home.py
