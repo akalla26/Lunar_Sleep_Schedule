@@ -1,0 +1,19 @@
+pyi-archive_viewer.exe
+pyi-bindepend.exe
+pyi-grab_version.exe
+pyi-makespec.exe
+pyinstaller.exe
+pyi-set_version.exe
+.venv2
+.vscode
+log.py
+log.ui
+recommendations.py
+recommendations.ui
+override.py
+overrie.ui
+main.py
+main.ui
+stats.pi
+stats.ui
+Universal Sleep Tracker 0.1.exe
