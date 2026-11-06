@@ -1,18 +1,15 @@
-import random
 # Importing the necessary modules
-import gc
 from time import sleep
-from os import read
 import sys
+import ctypes
+import pathlib
+import csv
 from datetime import datetime, timezone, timedelta, date, time
-from unittest import loader
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 from datetime import datetime, UTC
 from PySide6.QtWidgets import QMainWindow, QPushButton, QInputDialog, QLineEdit, QGroupBox, QDateEdit, QDateTimeEdit, QCalendarWidget, QTextEdit
 from PySide6.QtCore import Qt, QDateTime, QDate, QTime, QTimeZone, QByteArray
-import ctypes
-import pathlib
 from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
     QMetaObject, QObject, QPoint, QRect,
     QSize, QTime, QUrl, Qt)
@@ -24,7 +21,9 @@ from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenuBar,
     QPushButton, QSizePolicy, QStatusBar, QWidget, QTimeEdit)
 
 # File path and file data
+# The normal text file is simply to hold immediate data while the csv holds long term stuff
 filePath = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_data.txt"
+filePathCSV = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_csv.csv"
 fileData = ""
 
 # Stores the data for the current time
@@ -84,7 +83,7 @@ def Write_Data():
     
     Remove_Protection()
     
-    fileData = open(filePath, "w")
+    fileData = open(filePath, "w", encoding="utf-8")
 
     fileData.write(f"Starting Date: {firstDate.month}/{firstDate.day}/{firstDate.year}\n")
     fileData.write(f"Fatigue Score: {fatigueScore}\n")
@@ -123,7 +122,7 @@ def Load_Data():
     global isSleeping, fifteen_minutes_before_sleep, two_hours_before_sleep, eight_hours_after_sleep, awake
 
     Remove_Protection()
-    fileData = open(filePath, "r")
+    fileData = open(filePath, "r", encoding="utf-8")
     line = fileData.readline()
     index = 0
 
@@ -524,7 +523,7 @@ class Stats_Window(QMainWindow):
 
         Reset_Data()
 
-        fileData = open(filePath, "r")
+        fileData = open(filePath, "r", encoding="utf-8")
         line = fileData.readline()
 
         index = 0
@@ -742,8 +741,8 @@ class Log_Window(QMainWindow):
             self.notif.setStyleSheet("color: red;")
             return
         
-        elif sleep_start_adjusted.secsTo(sleep_end_adjusted) > 24 * 3600:
-            self.notif.setText("Error: Sleep duration cannot exceed 24 hours.")
+        elif sleep_start_adjusted.secsTo(sleep_end_adjusted) >= 24 * 3600:
+            self.notif.setText("Error: Sleep duration cannot be 24 hours or more.")
             self.notif.setStyleSheet("color: red;")
             return
         
@@ -772,7 +771,7 @@ class Log_Window(QMainWindow):
             self.notif.setText("Successfully logged!")
             self.notif.setStyleSheet("color: green;")
                  
-            if (sleep_start.date() == sleep_end.date()):                
+            if (lastSleptTime.date() == sleep_end.date()):                
                 
                 lastSleptTime = sleep_end
                 hrSlept += (sleep_end - sleep_start).seconds // 3600
@@ -782,21 +781,24 @@ class Log_Window(QMainWindow):
                 Load_Data()
                 
             else:
+
+                if (sleep_start.date() - lastSleptTime.date()).days > 1:
+
+                    daysMissed = (sleep_start.date() - lastSleptTime.date()).days - 1
+                    sleepMissed = daysMissed * (minTarget + hrTarget * 60)
+                    fatigueScore += sleepMissed // 15
                                                 
                 lastSleptTime = sleep_end
                 
+                hrSlept += (sleep_end - sleep_start).seconds // 3600
+                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
+
                 hrDiff = hrSlept - hrTarget
                 minDiff = minSlept - minTarget
                 
                 # Limits on fatigue score, it cannot go below 0 or above 100
                 # The fatigue score is calculated based on the difference between the actual sleep duration and the target sleep duration
-                
-                if (hrDiff < 0):
-                    hrDiff = -hrDiff
-                    
-                if (minDiff < 0):
-                    minDiff = -minDiff
-                    
+                                    
                 if (hrDiff == 0):
                     if (minDiff == 0):
                         fatigueScore -= 0  # No change in fatigue score if the sleep duration matches the target duration
@@ -809,17 +811,14 @@ class Log_Window(QMainWindow):
                     fatigueScore = 0
                     
                 elif (fatigueScore > 100):
-                    fatigueScore = 100                                
+                    fatigueScore = 100
                 
                 hrSlept = 0
                 minSlept = 0          
                 
                 Write_Data()
                 Load_Data()
-                
-                hrSlept += (sleep_end - sleep_start).seconds // 3600
-                minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
-    
+                    
     def back_to_main(self):
         global widget
         widget.setCurrentIndex(0)  # Switch back to the main window
@@ -1121,9 +1120,9 @@ Remove_Protection()
 # Attempts to open the file
 # If it exists, it closes it, if it doesn't it sets it up again before closing it
 try:
-    fileData = open(filePath, "r")
+    fileData = open(filePath, "r", encoding="utf-8")
 except:
-    fileData = open(filePath, "w")
+    fileData = open(filePath, "w", encoding="utf-8")
     fileData.write("Starting Date: " + str(currDateTime.month) + "/" + str(currDateTime.day) + "/" + str(currDateTime.year) + "\n")
     fileData.write("Fatigue Score: 30\n")
     fileData.write("Recommended Sleep Time: 22:30\n")

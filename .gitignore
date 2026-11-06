@@ -4,5 +4,6 @@
 *.txt
 *.svg
 !Home.py
+!Universal Sleep Tracker.py
 .vscode/
 .venv2/
