@@ -75,6 +75,7 @@ stats_window = ""
 log_window = ""
 override_window = ""
 recommendation_window = ""
+splash = QSplashScreen(QPixmap("Splash.png"))
 
 # Writes the data into the file
 def Write_Data():
@@ -1075,9 +1076,10 @@ class Recommendation_Window(QMainWindow):
 # Actually runs the program, this is where the main window is created and shown
 def window():
         
-    app.setWindowIcon(QIcon(str(pathlib.Path(__file__).parent.resolve()) + "\\Moon Transparent.ico"))
-    splash = QSplashScreen(QPixmap(str(pathlib.Path(__file__).parent.resolve()) + "\\Splash.png"))
+    app.setWindowIcon(QIcon("Moon Transparent.ico"))
+    
     splash.show()
+
     widget.setWindowTitle("Universal Sleep Tracker")
     widget.setFixedHeight(600)
     widget.setFixedWidth(800)
@@ -1091,10 +1093,19 @@ def window():
     widget.addWidget(override_window)
     recommendation_window = Recommendation_Window()
     widget.addWidget(recommendation_window)
-    splash.finish(main_window)
     widget.show()
+
+    #splash.finish(widget)
+    splash.finish(main_window)
     
     sys.exit(app.exec())
+    
+    try:
+        import pyi_splash
+        pyi_splash.close()
+    except ImportError:
+        Exception("BOOOOOOO")
+        pass  # Not running inside a PyInstaller bundle
     
 # Updates the current time
 def Update_Time():
@@ -1145,5 +1156,33 @@ Remove_Protection()
 # Reads data and initializes it
 Load_Data()
 
-# Start of program
-window()
+# Start of program        
+app.setWindowIcon(QIcon("Moon Transparent.ico"))
+
+splash.show()
+
+widget.setWindowTitle("Universal Sleep Tracker")
+widget.setFixedHeight(600)
+widget.setFixedWidth(800)
+main_window = UI_MainWindow()
+widget.addWidget(main_window)
+stats_window = Stats_Window()
+widget.addWidget(stats_window)
+log_window = Log_Window()
+widget.addWidget(log_window)
+override_window = Override_Window()
+widget.addWidget(override_window)
+recommendation_window = Recommendation_Window()
+widget.addWidget(recommendation_window)
+widget.show()
+
+#splash.finish(widget)
+splash.finish(main_window)
+
+sys.exit(app.exec())
+
+try:
+    import pyi_splash
+    pyi_splash.close()
+except ImportError:
+    pyi_splash = None
