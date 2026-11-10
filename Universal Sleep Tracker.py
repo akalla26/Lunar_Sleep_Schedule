@@ -18,7 +18,7 @@ from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
     QImage, QKeySequence, QLinearGradient, QPainter,
     QPalette, QPixmap, QRadialGradient, QTransform)
 from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenuBar,
-    QPushButton, QSizePolicy, QStatusBar, QWidget, QTimeEdit)
+    QPushButton, QSizePolicy, QStatusBar, QWidget, QTimeEdit, QSplashScreen)
 
 # File path and file data
 # The normal text file is simply to hold immediate data while the csv holds long term stuff
@@ -1074,7 +1074,10 @@ class Recommendation_Window(QMainWindow):
 
 # Actually runs the program, this is where the main window is created and shown
 def window():
-    
+        
+    app.setWindowIcon(QIcon(str(pathlib.Path(__file__).parent.resolve()) + "\\Moon Transparent.ico"))
+    splash = QSplashScreen(QPixmap(str(pathlib.Path(__file__).parent.resolve()) + "\\Splash.png"))
+    splash.show()
     widget.setWindowTitle("Universal Sleep Tracker")
     widget.setFixedHeight(600)
     widget.setFixedWidth(800)
@@ -1088,6 +1091,7 @@ def window():
     widget.addWidget(override_window)
     recommendation_window = Recommendation_Window()
     widget.addWidget(recommendation_window)
+    splash.finish(main_window)
     widget.show()
     
     sys.exit(app.exec())
