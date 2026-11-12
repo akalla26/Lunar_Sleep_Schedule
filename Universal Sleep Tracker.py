@@ -1,9 +1,10 @@
 # Importing the necessary modules
-from time import sleep
+import os
 import sys
 import ctypes
 import pathlib
 import csv
+from io import StringIO
 from datetime import datetime, timezone, timedelta, date, time
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenuBar,
 filePath = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_data.txt"
 filePathCSV = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_csv.csv"
 fileData = ""
+fileDataCSV = ""
 
 # Stores the data for the current time
 currDateTime = 0
@@ -75,7 +77,30 @@ stats_window = ""
 log_window = ""
 override_window = ""
 recommendation_window = ""
-splash = QSplashScreen(QPixmap("Splash.png"))
+
+# Stores the images 
+splashDir = ""
+icoDir = ""
+
+try:
+    splashDir = sys._MEIPASS
+except:
+    splashDir = os.path.abspath(".")
+
+try:
+    icoDir = sys._MEIPASS
+except:
+    icoDir = os.path.abspath(".")
+
+print(icoDir)
+print(icoDir + "\\Moon Transparent.ico")
+print(splashDir)
+print(splashDir + "\\Splash.png")
+
+icoDir.replace("\\", "/")
+
+app.setWindowIcon(QIcon(icoDir + "/Moon Transparent.ico"))
+splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))
 
 # Writes the data into the file
 def Write_Data():
@@ -1072,40 +1097,6 @@ class Recommendation_Window(QMainWindow):
     def back_to_main(self):
         global widget
         widget.setCurrentIndex(0)  # Switch back to the main window
-
-# Actually runs the program, this is where the main window is created and shown
-def window():
-        
-    app.setWindowIcon(QIcon("Moon Transparent.ico"))
-    
-    splash.show()
-
-    widget.setWindowTitle("Universal Sleep Tracker")
-    widget.setFixedHeight(600)
-    widget.setFixedWidth(800)
-    main_window = UI_MainWindow()
-    widget.addWidget(main_window)
-    stats_window = Stats_Window()
-    widget.addWidget(stats_window)
-    log_window = Log_Window()
-    widget.addWidget(log_window)
-    override_window = Override_Window()
-    widget.addWidget(override_window)
-    recommendation_window = Recommendation_Window()
-    widget.addWidget(recommendation_window)
-    widget.show()
-
-    #splash.finish(widget)
-    splash.finish(main_window)
-    
-    sys.exit(app.exec())
-    
-    try:
-        import pyi_splash
-        pyi_splash.close()
-    except ImportError:
-        Exception("BOOOOOOO")
-        pass  # Not running inside a PyInstaller bundle
     
 # Updates the current time
 def Update_Time():
@@ -1149,6 +1140,11 @@ except:
     fileData.write("Override end: 1/1/1 \n")
     fileData.write("Override offset: " + str(overrideOffsets[0]) + "," + str(overrideOffsets[1]))
 
+try:
+    fileDataCSV = csv.reader(StringIO(filePathCSV))
+except:
+    fileDataCSV = csv.writer(StringIO(filePathCSV))
+
 fileData.close()
 Add_Protection()
 Remove_Protection()
@@ -1157,8 +1153,6 @@ Remove_Protection()
 Load_Data()
 
 # Start of program        
-app.setWindowIcon(QIcon("Moon Transparent.ico"))
-
 splash.show()
 
 widget.setWindowTitle("Universal Sleep Tracker")
@@ -1176,8 +1170,7 @@ recommendation_window = Recommendation_Window()
 widget.addWidget(recommendation_window)
 widget.show()
 
-#splash.finish(widget)
-splash.finish(main_window)
+splash.finish(widget)
 
 sys.exit(app.exec())
 
@@ -1185,4 +1178,4 @@ try:
     import pyi_splash
     pyi_splash.close()
 except ImportError:
-    pyi_splash = None
+    pass
