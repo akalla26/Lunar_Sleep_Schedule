@@ -23,8 +23,8 @@ from PySide6.QtWidgets import (QApplication, QLabel, QMainWindow, QMenuBar,
 
 # File path and file data
 # The normal text file is simply to hold immediate data while the csv holds long term stuff
-filePath = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_data.txt"
-filePathCSV = str(pathlib.Path(__file__).parent.resolve()) + "/.hidden_csv.csv"
+filePath = str(pathlib.Path(__file__).parent.resolve()) + "/data.txt"
+filePathCSV = str(pathlib.Path(__file__).parent.resolve()) + "\\data_csv.csv"
 fileData = ""
 fileDataCSV = ""
 
@@ -81,26 +81,6 @@ recommendation_window = ""
 # Stores the images 
 splashDir = ""
 icoDir = ""
-
-try:
-    splashDir = sys._MEIPASS
-except:
-    splashDir = os.path.abspath(".")
-
-try:
-    icoDir = sys._MEIPASS
-except:
-    icoDir = os.path.abspath(".")
-
-print(icoDir)
-print(icoDir + "\\Moon Transparent.ico")
-print(splashDir)
-print(splashDir + "\\Splash.png")
-
-icoDir.replace("\\", "/")
-
-app.setWindowIcon(QIcon(icoDir + "/Moon Transparent.ico"))
-splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))
 
 # Writes the data into the file
 def Write_Data():
@@ -288,7 +268,6 @@ def Load_Data():
         two_hours_before_sleep = False
         eight_hours_after_sleep = False
         awake = False
-
 
     # When the user is fully awake
     def Fully_Awake():
@@ -1094,6 +1073,8 @@ class Recommendation_Window(QMainWindow):
         if shouldNap:
             self.recommendationLabel.setText(self.recommendationLabel.text() + "\nIf you're feeling exhausted, take a nap as needed.")
 
+        self.recommendationLabel.setText(f"It is {currDateTime.time().hour}:{currDateTime.time().minute} {currDateTime.date().month}/{currDateTime.date().day}/{currDateTime.date().year}\nYour bed time is {timeToSleep.hour}:{timeToSleep.minute} and waking time at {timeToWake.hour}:{timeToWake.minute} for a total of {hrTarget} hours and {minTarget} minutes of sleep\n{self.recommendationLabel.text()}")
+
     def back_to_main(self):
         global widget
         widget.setCurrentIndex(0)  # Switch back to the main window
@@ -1111,6 +1092,7 @@ def Remove_Protection():
 
     FILE_ATTRIBUTE_PROTECTED = None
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
+    ctypes.windll.kernel32.SetFileAttributesW(filePathCSV, FILE_ATTRIBUTE_PROTECTED)
 
 # Readds protections, prevents overwriting of data
 # Protection should be removed first, then readded
@@ -1118,6 +1100,7 @@ def Add_Protection():
 
     FILE_ATTRIBUTE_PROTECTED = 0x02 | 0x04
     ctypes.windll.kernel32.SetFileAttributesW(filePath, FILE_ATTRIBUTE_PROTECTED)
+    ctypes.windll.kernel32.SetFileAttributesW(filePathCSV, FILE_ATTRIBUTE_PROTECTED)
 
 # Set up
 Update_Time()
@@ -1140,10 +1123,18 @@ except:
     fileData.write("Override end: 1/1/1 \n")
     fileData.write("Override offset: " + str(overrideOffsets[0]) + "," + str(overrideOffsets[1]))
 
+# Does the same for csv files
 try:
-    fileDataCSV = csv.reader(StringIO(filePathCSV))
+
+    with open(filePathCSV, 'r', newline='') as csvfile:
+        print(csvfile.read())
+
 except:
-    fileDataCSV = csv.writer(StringIO(filePathCSV))
+    
+    with open(filePathCSV, 'w', newline='') as csvfile:
+        row = ['Date', 'Time Slept', 'Time Woken Up', 'Session duration', 'Total sleep so far today']
+        fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
+        fileDataCSV.writeheader()
 
 fileData.close()
 Add_Protection()
@@ -1152,9 +1143,25 @@ Remove_Protection()
 # Reads data and initializes it
 Load_Data()
 
-# Start of program        
+# Start of program 
+
+# Loads images
+try:
+    splashDir = sys._MEIPASS
+except:
+    splashDir = os.path.abspath(".")
+
+try:
+    icoDir = sys._MEIPASS
+    app.setWindowIcon(QIcon(icoDir + "/Moon Transparent.ico"))
+except:
+    icoDir = os.path.abspath(".")
+    app.setWindowIcon(QIcon(icoDir + "\\Moon Transparent.ico"))
+
+splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))      
 splash.show()
 
+# Sets everything else
 widget.setWindowTitle("Universal Sleep Tracker")
 widget.setFixedHeight(600)
 widget.setFixedWidth(800)
@@ -1172,10 +1179,10 @@ widget.show()
 
 splash.finish(widget)
 
-sys.exit(app.exec())
-
 try:
     import pyi_splash
     pyi_splash.close()
 except ImportError:
     pass
+
+sys.exit(app.exec())

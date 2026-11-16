@@ -2,8 +2,7 @@
 *.ui
 *.py
 *.txt
-*.svg
-!Home.py
+*.csv
 !Universal Sleep Tracker.py
 .vscode/
 .venv2/
