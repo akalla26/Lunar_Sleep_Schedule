@@ -4,6 +4,7 @@ import sys
 import ctypes
 import pathlib
 import csv
+from pathlib import Path
 from io import StringIO
 from datetime import datetime, timezone, timedelta, date, time
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -438,6 +439,8 @@ class UI_MainWindow(QMainWindow):
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
         self.title = QLabel(self.centralwidget)
+        #self.title.setFont(QFont('Arial', 3))
+        #self.title.setWordWrap(True)
         self.title.setObjectName(u"title")
         self.title.setGeometry(QRect(50, 50, 300, 30))
         self.logButton = QPushButton(self.centralwidget)
@@ -781,6 +784,15 @@ class Log_Window(QMainWindow):
                 lastSleptTime = sleep_end
                 hrSlept += (sleep_end - sleep_start).seconds // 3600
                 minSlept += ((sleep_end - sleep_start).seconds % 3600) // 60
+
+                Remove_Protection()
+
+                with open(filePathCSV, 'a', newline='') as csvfile:
+                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60)]
+                    fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
+                    fileDataCSV.writeheader()
+
+                Add_Protection()
                 
                 Write_Data()
                 Load_Data()
@@ -819,7 +831,16 @@ class Log_Window(QMainWindow):
                     fatigueScore = 100
                 
                 hrSlept = 0
-                minSlept = 0          
+                minSlept = 0
+
+                Remove_Protection()
+
+                with open(filePathCSV, 'a', newline='') as csvfile:
+                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60)]
+                    fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
+                    fileDataCSV.writeheader()
+
+                Add_Protection()
                 
                 Write_Data()
                 Load_Data()
@@ -1127,7 +1148,7 @@ except:
 try:
 
     with open(filePathCSV, 'r', newline='') as csvfile:
-        print(csvfile.read())
+        pass
 
 except:
     
@@ -1151,15 +1172,15 @@ try:
 except:
     splashDir = os.path.abspath(".")
 
-try:
-    icoDir = sys._MEIPASS
-    app.setWindowIcon(QIcon(icoDir + "/Moon Transparent.ico"))
+try:    
+    icoDir = os.path.join(sys._MEIPASS, "Moon.ico")
 except:
-    icoDir = os.path.abspath(".")
-    app.setWindowIcon(QIcon(icoDir + "\\Moon Transparent.ico"))
+    icoDir = str(Path(__file__).resolve().parent / "Moon.ico")
 
 splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))      
 splash.show()
+
+app.setWindowIcon(QIcon(icoDir))
 
 # Sets everything else
 widget.setWindowTitle("Universal Sleep Tracker")
@@ -1184,5 +1205,5 @@ try:
     pyi_splash.close()
 except ImportError:
     pass
-
+#main_window.title.setText(icoDir)
 sys.exit(app.exec())
