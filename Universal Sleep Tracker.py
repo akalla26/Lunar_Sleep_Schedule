@@ -788,7 +788,7 @@ class Log_Window(QMainWindow):
                 Remove_Protection()
 
                 with open(filePathCSV, 'a', newline='') as csvfile:
-                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60)]
+                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60), fatigueScore]
                     fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
                     fileDataCSV.writeheader()
 
@@ -829,18 +829,18 @@ class Log_Window(QMainWindow):
                     
                 elif (fatigueScore > 100):
                     fatigueScore = 100
-                
-                hrSlept = 0
-                minSlept = 0
 
                 Remove_Protection()
 
                 with open(filePathCSV, 'a', newline='') as csvfile:
-                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60)]
+                    row = [currDateTime.date(), sleep_start_adjusted.time().toPython(), sleep_end_adjusted.time().toPython(), ((sleep_end - sleep_start).seconds // 3600) + (((sleep_end - sleep_start).seconds % 3600) // 60), minSlept + (hrSlept * 60), fatigueScore]
                     fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
                     fileDataCSV.writeheader()
 
                 Add_Protection()
+                
+                hrSlept = 0
+                minSlept = 0
                 
                 Write_Data()
                 Load_Data()
@@ -1094,7 +1094,7 @@ class Recommendation_Window(QMainWindow):
         if shouldNap:
             self.recommendationLabel.setText(self.recommendationLabel.text() + "\nIf you're feeling exhausted, take a nap as needed.")
 
-        self.recommendationLabel.setText(f"It is {currDateTime.time().hour}:{currDateTime.time().minute} {currDateTime.date().month}/{currDateTime.date().day}/{currDateTime.date().year}\nYour bed time is {timeToSleep.hour}:{timeToSleep.minute} and waking time at {timeToWake.hour}:{timeToWake.minute} for a total of {hrTarget} hours and {minTarget} minutes of sleep\n{self.recommendationLabel.text()}")
+        self.recommendationLabel.setText(f"It is {currDateTime.time().hour}:{currDateTime.time().minute:02d} {currDateTime.date().month}/{currDateTime.date().day}/{currDateTime.date().year}\nYour bed time is {timeToSleep.hour}:{timeToSleep.minute} and waking time at {timeToWake.hour}:{timeToWake.minute} for a total of {hrTarget} hours and {minTarget} minutes of sleep\n{self.recommendationLabel.text()}")
 
     def back_to_main(self):
         global widget
@@ -1153,7 +1153,7 @@ try:
 except:
     
     with open(filePathCSV, 'w', newline='') as csvfile:
-        row = ['Date', 'Time Slept', 'Time Woken Up', 'Session duration', 'Total sleep so far today']
+        row = ['Date', 'Time Slept', 'Time Woken Up', 'Session duration', 'Total sleep so far today', 'Fatigue Score']
         fileDataCSV = csv.DictWriter(csvfile, fieldnames=row)
         fileDataCSV.writeheader()
 
@@ -1171,16 +1171,18 @@ try:
     splashDir = sys._MEIPASS
 except:
     splashDir = os.path.abspath(".")
-
-try:    
-    icoDir = os.path.join(sys._MEIPASS, "Moon.ico")
-except:
-    icoDir = str(Path(__file__).resolve().parent / "Moon.ico")
+a = 0
+def resource_path(relative_path):
+    global a
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    a = os.path.join(base_path, relative_path)
+    return os.path.join(base_path, relative_path)
 
 splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))      
 splash.show()
-
-app.setWindowIcon(QIcon(icoDir))
 
 # Sets everything else
 widget.setWindowTitle("Universal Sleep Tracker")
@@ -1197,6 +1199,8 @@ widget.addWidget(override_window)
 recommendation_window = Recommendation_Window()
 widget.addWidget(recommendation_window)
 widget.show()
+app.setWindowIcon(QIcon(resource_path("Moon.ico")))
+#override_window.info.setText(str(a))
 
 splash.finish(widget)
 
@@ -1205,5 +1209,5 @@ try:
     pyi_splash.close()
 except ImportError:
     pass
-#main_window.title.setText(icoDir)
+    
 sys.exit(app.exec())
