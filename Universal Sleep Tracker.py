@@ -83,6 +83,10 @@ recommendation_window = ""
 splashDir = ""
 icoDir = ""
 
+# Does a thing
+myappid = "Aryan Kalla.Universal Sleep Tracker.Universal Sleep Tracker.0.2.0"  # Arbitrary unique string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
 # Writes the data into the file
 def Write_Data():
     
@@ -1171,15 +1175,13 @@ try:
     splashDir = sys._MEIPASS
 except:
     splashDir = os.path.abspath(".")
-a = 0
+
 def resource_path(relative_path):
-    global a
+    """Get the absolute path to a resource (icon, etc.) bundled with the app."""
+    # PyInstaller creates a temp folder for bundled app resources
     if hasattr(sys, '_MEIPASS'):
-        base_path = sys._MEIPASS
-    else:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-    a = os.path.join(base_path, relative_path)
-    return os.path.join(base_path, relative_path)
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath("."), relative_path)
 
 splash = QSplashScreen(QPixmap(splashDir + "/Splash.png"))      
 splash.show()
@@ -1198,9 +1200,10 @@ override_window = Override_Window()
 widget.addWidget(override_window)
 recommendation_window = Recommendation_Window()
 widget.addWidget(recommendation_window)
-widget.show()
 app.setWindowIcon(QIcon(resource_path("Moon.ico")))
-#override_window.info.setText(str(a))
+
+widget.show()
+#app.setWindowIcon(QIcon(resource_path("Moon.ico")))
 
 splash.finish(widget)
 
